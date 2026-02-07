@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Trading Profile & Education</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <h1>Trader Profile & Past Trade</h1>
+    <form method="POST">
+        <h2>Profile Info</h2>
+        <label>Name:</label><br>
+        <input type="text" name="name" placeholder="Name" required><br>
+
+        <label>Trading Level:</label><br>
+        <input type="text" name="tradingLevel" placeholder="Trading Level" required><br>
+
+        <label>Learning Style:</label><br>
+        <input type="text" name="learningStyle" placeholder="Learning Style" required><br>
+
+        <label>Risk Tolerance:</label><br>
+        <input type="text" name="riskTolerance" placeholder="Risk Tolerance" required><br>
+
+        <label>Preferred Markets:</label><br>
+        <input type="text" name="preferredMarkets" placeholder="Preferred Markets" required><br>
+
+        <label>Trading Frequency:</label><br>
+        <input type="text" name="tradingFrequency" placeholder="Trading Frequency" required><br>
+
+        <h2>Past Trade Info (optional)</h2>
+        <label>Trade Date:</label><br>
+        <input type="date" name="date"><br>
+
+        <label>Stock Code:</label><br>
+        <input type="text" name="stock_code" placeholder="Stock Code"><br>
+
+        <label>Stock Name:</label><br>
+        <input type="text" name="stock_name" placeholder="Stock Name"><br>
+
+        <label>Action (BUY/SELL):</label><br>
+        <input type="text" name="action" placeholder="Action (BUY/SELL)" required><br>
+
+        <label>Units:</label><br>
+        <input type="number" name="units" placeholder="Units" required><br>
+
+        <label>Price:</label><br>
+        <input type="number" step="0.01" name="price" placeholder="Price" required><br>
+
+        <label>Intraday (Yes/No):</label><br>
+        <input type="text" name="intraday" placeholder="Intraday (Yes/No)" required><br>
+
+        <button type="submit">Submit</button>
+    </form>
+
+    {% if education %}
+        <h2>Your Personalized Trading Education</h2>
+        <div style="border:1px solid #ccc; padding:10px; margin-top:10px;">
+            {{ education | safe }}
+        </div>
+    {% endif %}
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
