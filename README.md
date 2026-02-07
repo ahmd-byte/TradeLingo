@@ -1,11 +1,32 @@
+# TradeLingo
 
-  # deriv hackathon tradelingo
+A gamified trading education platform.
 
-  This is a code bundle for deriv hackathon tradelingo. The original project is available at https://www.figma.com/design/qUkby6yliex7D62hruycCW/deriv-hackathon-tradelingo.
+## Project Structure
 
-  ## Running the code
+```
+├── frontend/          # React + Vite frontend
+│   ├── src/
+│   ├── package.json
+│   └── ...
+├── backend/           # FastAPI backend (to be added)
+└── README.md
+```
 
-  Run `npm i` to install the dependencies.
+## Running the Frontend
 
-  Run `npm run dev` to start the development server.
-  
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The development server will start at `http://localhost:3000`
+
+## Running the Backend (Coming Soon)
+
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
