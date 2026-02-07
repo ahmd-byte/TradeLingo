@@ -1,8 +1,13 @@
-# Dependencies
-node_modules/
-venv/
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# Environment variables
+.env
+.env.local
 
 # IDE
 .vscode/
@@ -10,9 +15,8 @@ __pycache__/
 *.swp
 *.swo
 
-# Environment variables
-.env
-.env.local
+# Dependencies
+node_modules/
 
 # Build outputs
 dist/
