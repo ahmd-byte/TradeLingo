@@ -181,5 +181,101 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/therapy", methods=["POST"])
+def therapy():
+    """
+    Therapy chat endpoint for Trading Therapy Bear.
+    Focuses on emotional support and trading psychology around recent trades.
+    
+    Expects JSON body:
+    {
+        "message": "user's message text",
+        "session_id": "optional session identifier",
+        "user_profile": { ... },
+        "trade_data": { ... }
+    }
+    
+    Returns JSON:
+    {
+        "acknowledgment": "...",
+        "emotional_insight": "...",
+        "therapeutic_question": "...",
+        "coping_strategy": "...",
+        "encouragement": "...",
+        "emotional_pattern": "..."
+    }
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No JSON body provided"}), 400
+        
+        message = data.get("message", "")
+        session_id = data.get("session_id", "therapy-default")
+        
+        user_profile = data.get("user_profile", {
+            "name": "Friend",
+            "tradingLevel": "beginner",
+            "learningStyle": "visual",
+            "riskTolerance": "medium",
+            "preferredMarkets": "Stocks",
+            "tradingFrequency": "weekly"
+        })
+        
+        user_profile["user_question"] = message
+        
+        trade_data = data.get("trade_data", None)
+        
+        # Get session memory
+        memory = get_or_create_session_memory(session_id)
+        
+        # Build observation & analysis (reuse existing helpers)
+        from prompts import build_observation_context, build_analysis_context, build_memory_summary
+        from prompts.therapy_prompt import build_therapy_prompt
+        from services.llm_service import LLMService
+        
+        observation = build_observation_context(
+            trade_data=trade_data,
+            user_question=message
+        )
+        
+        analysis = build_analysis_context(
+            past_mistakes=memory.get_recent_mistakes(limit=5),
+            recent_trades=memory.get_recent_trades(limit=3),
+            focus_areas=memory.get_focus_areas()
+        )
+        
+        memory_summary = build_memory_summary(memory)
+        
+        prompt = build_therapy_prompt(
+            profile=user_profile,
+            observation=observation,
+            analysis_input=analysis,
+            memory_summary=memory_summary
+        )
+        
+        llm = LLMService()
+        response = llm.call_gemini_json(prompt)
+        
+        # Update memory
+        memory.increment_interaction()
+        if response.get("emotional_pattern"):
+            memory.add_mistake(
+                mistake_type=response["emotional_pattern"],
+                description=response.get("emotional_insight", ""),
+                context=message
+            )
+        if trade_data:
+            memory.add_trade_summary(trade_data, analysis=response.get("acknowledgment", ""))
+        
+        session_memory[session_id] = memory
+        
+        return jsonify(response)
+    
+    except Exception as e:
+        print(f"Error in /api/therapy: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
     app.run(debug=True, port=5000)

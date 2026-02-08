@@ -5,10 +5,12 @@ from .tutor_prompt import (
     build_analysis_context,
     build_memory_summary
 )
+from .therapy_prompt import build_therapy_prompt
 
 __all__ = [
     "build_tutor_prompt",
     "build_observation_context",
     "build_analysis_context",
-    "build_memory_summary"
+    "build_memory_summary",
+    "build_therapy_prompt"
 ]

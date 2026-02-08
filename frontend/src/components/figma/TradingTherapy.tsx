@@ -2,54 +2,51 @@ import { useState, useEffect, useRef } from 'react';
 import bearOnCouchImage from "@/assets/therapybear.png";
 
 // Initial greeting text
-const greetingText = "Let's talk about your recent trades.";
+const greetingText = "Let's talk about your recent trades. How are you feeling?";
 
-// AI Speech Text (appears after clicking button)
-const aiSpeechText = "This loss came after two wins. Let's talk about emotional control.";
+// Agent response type from backend
+interface TherapyResponse {
+  acknowledgment: string;
+  emotional_insight: string;
+  therapeutic_question: string;
+  coping_strategy: string;
+  encouragement: string;
+  emotional_pattern: string;
+}
 
-// Remark text
-const remarkText = "You lost $120 today in the Volatility 100 trade";
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  therapyResponse?: TherapyResponse;
+}
 
 export default function TradingTherapy() {
   const [speechBubbleVisible, setSpeechBubbleVisible] = useState(false);
   const [displayedText, setDisplayedText] = useState('');
-  const [isTypingComplete, setIsTypingComplete] = useState(false);
   const [hasStartedSession, setHasStartedSession] = useState(false);
-  const [remarkVisible, setRemarkVisible] = useState(false);
   const [bearVisible, setBearVisible] = useState(false);
   const [userInput, setUserInput] = useState('');
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Show bear first when component mounts
   useEffect(() => {
     const bearTimer = setTimeout(() => {
       setBearVisible(true);
     }, 100);
-    
     return () => clearTimeout(bearTimer);
   }, []);
 
-  // Show remark after bear
+  // Show speech bubble after bear
   useEffect(() => {
     if (!bearVisible) return;
-
-    const remarkTimer = setTimeout(() => {
-      setRemarkVisible(true);
-    }, 400);
-    
-    return () => clearTimeout(remarkTimer);
-  }, [bearVisible]);
-
-  // Show speech bubble after remark, then start typewriter for greeting
-  useEffect(() => {
-    if (!remarkVisible) return;
-
     const cloudTimer = setTimeout(() => {
       setSpeechBubbleVisible(true);
-    }, 600); // Cloud appears after remark
-    
+    }, 600);
     return () => clearTimeout(cloudTimer);
-  }, [remarkVisible]);
+  }, [bearVisible]);
 
   // Typewriter effect for initial greeting
   useEffect(() => {
@@ -70,45 +67,82 @@ export default function TradingTherapy() {
     return () => clearInterval(typingInterval);
   }, [speechBubbleVisible, hasStartedSession]);
 
-  // Typewriter effect for AI response
+  // Auto-scroll chat
   useEffect(() => {
-    if (!hasStartedSession) return;
-
-    setDisplayedText(''); // Clear the greeting
-    setIsTypingComplete(false);
-    
-    let currentIndex = 0;
-    const typingSpeed = 50; // milliseconds per character
-
-    const typingInterval = setInterval(() => {
-      if (currentIndex < aiSpeechText.length) {
-        setDisplayedText(aiSpeechText.slice(0, currentIndex + 1));
-        currentIndex++;
-      } else {
-        clearInterval(typingInterval);
-        setIsTypingComplete(true);
-      }
-    }, typingSpeed);
-
-    return () => clearInterval(typingInterval);
-  }, [hasStartedSession]);
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages, isLoading]);
 
   const handleStartSession = () => {
     setHasStartedSession(true);
   };
 
-  const handleSendMessage = () => {
-    if (!userInput.trim()) return;
-    // Handle sending the message here
-    console.log('User message:', userInput);
+  const handleSendMessage = async () => {
+    if (!userInput.trim() || isLoading) return;
+
+    const message = userInput.trim();
     setUserInput('');
+
+    // Add user message to chat
+    setChatMessages(prev => [...prev, { role: 'user', content: message }]);
+
+    // Start loading
+    setIsLoading(true);
+    setHasStartedSession(true);
+
+    try {
+      const res = await fetch('/api/therapy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          session_id: 'therapy-session',
+          user_profile: {
+            name: 'User',
+            tradingLevel: 'beginner',
+            learningStyle: 'visual',
+            riskTolerance: 'medium',
+            preferredMarkets: 'Stocks',
+            tradingFrequency: 'weekly',
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
+
+      const therapyResponse: TherapyResponse = await res.json();
+
+      // Build display text from therapy response
+      const parts: string[] = [];
+      if (therapyResponse.acknowledgment) parts.push(therapyResponse.acknowledgment);
+      if (therapyResponse.emotional_insight) parts.push(therapyResponse.emotional_insight);
+      if (therapyResponse.therapeutic_question) parts.push(therapyResponse.therapeutic_question);
+      if (therapyResponse.coping_strategy) parts.push(`💡 ${therapyResponse.coping_strategy}`);
+      if (therapyResponse.encouragement) parts.push(therapyResponse.encouragement);
+
+      const aiText = parts.join('\n\n') || "I'm here for you. Tell me more about how you're feeling.";
+
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
+        content: aiText,
+        therapyResponse,
+      }]);
+    } catch (err) {
+      console.error('Therapy chat error:', err);
+      const errorMsg = "Sorry, I couldn't connect to the server. Make sure the backend is running.";
+      setChatMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       console.log('File uploaded:', file.name);
-      // Handle file upload logic here
     }
   };
 
@@ -128,10 +162,10 @@ export default function TradingTherapy() {
         </h1>
       </div>
 
-      {/* Bear Hero Section */}
-      <div className="pb-[220px] px-8 flex flex-col items-center gap-6">
-        {/* Context Card - Above Bear */}
-        {speechBubbleVisible && (
+      {/* Bear Hero Section / Chat Area */}
+      <div ref={chatContainerRef} className="pb-[220px] px-8 flex flex-col items-center gap-6">
+        {/* Speech Bubble - only show before session starts */}
+        {speechBubbleVisible && !hasStartedSession && (
           <div className="relative animate-fade-in max-w-[500px] w-full">
             <div className="bg-white border-[4px] border-black rounded-[20px] px-6 py-4 shadow-[6px_6px_0px_#000000]">
               <p className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-black leading-relaxed">
@@ -145,32 +179,65 @@ export default function TradingTherapy() {
             </div>
           </div>
         )}
-        
+
         {/* Bear on Couch Image */}
         <div className={`relative flex flex-col items-center transition-opacity duration-500 ${bearVisible ? 'opacity-100' : 'opacity-0'}`}>
-          <img 
-            src={bearOnCouchImage} 
-            alt="Bear on therapy couch" 
+          <img
+            src={bearOnCouchImage}
+            alt="Bear on therapy couch"
             className="w-[320px] h-auto object-contain"
           />
         </div>
 
-        {/* Single Remark - Appears FIRST when page loads */}
-        <div className={`max-w-[500px] w-full transition-opacity duration-600 ${remarkVisible ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="bg-white/5 border border-white/20 rounded-full px-6 py-3">
-            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-white/70 text-center leading-relaxed">
-              {remarkText}
-            </p>
+        {/* Chat Messages */}
+        {chatMessages.length > 0 && (
+          <div className="max-w-[600px] w-full space-y-4 mt-4">
+            {chatMessages.map((msg, idx) => (
+              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] rounded-[16px] px-5 py-3 border-[3px] border-black shadow-[4px_4px_0px_#000000] ${
+                  msg.role === 'user'
+                    ? 'bg-[#8b5cf6] text-white'
+                    : 'bg-white text-black'
+                }`}>
+                  <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] leading-relaxed whitespace-pre-wrap">
+                    {msg.content}
+                  </p>
+                  {msg.therapyResponse?.emotional_pattern && msg.therapyResponse.emotional_pattern !== 'exploring' && msg.therapyResponse.emotional_pattern !== 'healthy' && (
+                    <div className="mt-2 pt-2 border-t-2 border-black/20">
+                      <span className="font-['Arimo:Bold',sans-serif] font-bold text-[12px] text-[#f59e0b] uppercase">
+                        🧠 {msg.therapyResponse.emotional_pattern.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                  )}
+                  {msg.therapyResponse?.emotional_pattern === 'healthy' && (
+                    <div className="mt-2 pt-2 border-t-2 border-black/20">
+                      <span className="font-['Arimo:Bold',sans-serif] font-bold text-[12px] text-[#22c55e] uppercase">
+                        💚 Healthy mindset
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-white/10 border-[3px] border-white/20 rounded-[16px] px-5 py-3">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
-
-      {/* Therapy Prompts Section - REMOVED */}
 
       {/* Sticky CTA Button / Input */}
       <div className="fixed bottom-0 left-[200px] right-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a] to-transparent pt-8 pb-6 px-8 flex justify-center">
         {!hasStartedSession ? (
-          <button 
+          <button
             onClick={handleStartSession}
             className="bg-white border-[5px] border-black rounded-[16px] px-8 py-6 shadow-[8px_8px_0px_#000000] hover:shadow-[4px_4px_0px_#000000] active:shadow-[2px_2px_0px_#000000] transition-all hover:scale-105 active:scale-95 max-w-[700px] w-full"
           >
@@ -199,18 +266,18 @@ export default function TradingTherapy() {
               value={userInput}
               onChange={(e) => {
                 setUserInput(e.target.value);
-                // Auto-expand textarea
                 e.target.style.height = 'auto';
                 e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
               }}
               onKeyPress={handleKeyPress}
-              placeholder="Type your message..."
+              placeholder="Tell me how you're feeling about your trades..."
               rows={1}
               className="flex-1 bg-white border-[5px] border-black rounded-[16px] px-6 py-4 shadow-[6px_6px_0px_#000000] font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-black placeholder:text-black/40 focus:outline-none focus:shadow-[4px_4px_0px_#000000] transition-shadow resize-none overflow-y-auto min-h-[56px]"
             />
             <button
               onClick={handleSendMessage}
-              className="bg-white border-[5px] border-black rounded-[16px] px-6 shadow-[6px_6px_0px_#000000] hover:shadow-[4px_4px_0px_#000000] active:shadow-[2px_2px_0px_#000000] transition-all hover:scale-105 active:scale-95 flex-shrink-0 h-[56px] flex items-center justify-center"
+              disabled={isLoading}
+              className="bg-white border-[5px] border-black rounded-[16px] px-6 shadow-[6px_6px_0px_#000000] hover:shadow-[4px_4px_0px_#000000] active:shadow-[2px_2px_0px_#000000] transition-all hover:scale-105 active:scale-95 flex-shrink-0 h-[56px] flex items-center justify-center disabled:opacity-50"
             >
               <span className="font-['Arimo:Bold',sans-serif] font-bold text-[20px] text-black">
                 →
