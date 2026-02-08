@@ -32,3 +32,42 @@ The primary button style uses a flat offset shadow for a tactile, pressable feel
 - **Primary Font:** Arimo Bold
 - **Headings:** Uppercase, bold, large tracking
 - **Body Text:** Uppercase for emphasis, yellow accent color
+
+## CSS Class Conventions
+
+### Use Explicit Pixel Values for Design Specs
+
+When implementing designs with specific measurements, **always use explicit pixel values** instead of Tailwind defaults:
+
+| ❌ Don't Use     | ✅ Do Use           | Reason                           |
+| ---------------- | ------------------- | -------------------------------- |
+| `text-5xl`       | `text-[52px]`       | Tailwind's 5xl is 48px, not 52px |
+| `text-2xl`       | `text-[24px]`       | Ensures exact design matching    |
+| `leading-tight`  | `leading-[46.8px]`  | Precise line height control      |
+| `tracking-tight` | `tracking-[-1.3px]` | Exact letter spacing             |
+| `rounded-2xl`    | `rounded-[16px]`    | Specific border radius           |
+
+### Why This Matters
+
+1. **Design fidelity:** Figma designs specify exact pixel values
+2. **Consistency:** Prevents visual regression when refactoring
+3. **Predictability:** Explicit values don't change between Tailwind versions
+
+### Brand Colors
+
+Use the defined brand color classes instead of hex values:
+
+| ❌ Don't Use     | ✅ Do Use           |
+| ---------------- | ------------------- |
+| `bg-[#ff1814]`   | `bg-brand-red`      |
+| `text-[#f3ff00]` | `text-brand-yellow` |
+
+### Commenting Out JSX Code
+
+When commenting out React/TSX code that contains JSX comments:
+
+| ❌ Don't Use               | ✅ Do Use          |
+| -------------------------- | ------------------ |
+| Block comments `/* ... */` | Line comments `//` |
+
+Block comments fail when the code contains `{/* JSX comments */}` because the `*/` prematurely closes the outer comment.
