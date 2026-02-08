@@ -4,26 +4,40 @@ import superBearImage from "@/assets/superbear.png";
 // Initial greeting text
 const greetingText = "SuperBear turns your trades into a private research.";
 
-// AI Speech Text (appears after user sends message)
-const aiSpeechText = "This loss came after two wins. Let's talk about momentum bias.";
+// Agent response type from backend
+interface AgentResponse {
+  observation: string;
+  analysis: string;
+  learning_concept: string;
+  why_it_matters: string;
+  teaching_explanation: string;
+  teaching_example: string;
+  actionable_takeaway: string;
+  next_learning_suggestion: string;
+}
 
-// Remark text
-const remarkText = "You lost $120 today in the Volatility 100 trade";
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  agentResponse?: AgentResponse;
+}
 
 interface SuperBearProps {
   onProcessingChange?: (isProcessing: boolean) => void;
+  onAgentResponse?: (response: AgentResponse | null) => void;
 }
 
-export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
+export default function SuperBear({ onProcessingChange, onAgentResponse }: SuperBearProps = {}) {
   const [speechBubbleVisible, setSpeechBubbleVisible] = useState(false);
   const [displayedText, setDisplayedText] = useState('');
-  const [isTypingComplete, setIsTypingComplete] = useState(false);
   const [hasStartedSession, setHasStartedSession] = useState(false);
   const [remarkVisible, setRemarkVisible] = useState(false);
   const [bearVisible, setBearVisible] = useState(false);
   const [userInput, setUserInput] = useState('');
-  const [userHasSentMessage, setUserHasSentMessage] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // Show bear first when component mounts
   useEffect(() => {
@@ -51,14 +65,14 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
 
     const cloudTimer = setTimeout(() => {
       setSpeechBubbleVisible(true);
-    }, 600); // Cloud appears after remark
+    }, 600);
     
     return () => clearTimeout(cloudTimer);
   }, [remarkVisible]);
 
   // Typewriter effect for initial greeting
   useEffect(() => {
-    if (!speechBubbleVisible || userHasSentMessage) return;
+    if (!speechBubbleVisible) return;
 
     let currentIndex = 0;
     const typingSpeed = 50;
@@ -73,45 +87,73 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
     }, typingSpeed);
 
     return () => clearInterval(typingInterval);
-  }, [speechBubbleVisible, userHasSentMessage]);
+  }, [speechBubbleVisible]);
 
-  // Typewriter effect for AI response
+  // Auto-scroll chat
   useEffect(() => {
-    if (!userHasSentMessage) return;
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages, displayedText]);
 
-    setDisplayedText(''); // Clear the greeting
-    setIsTypingComplete(false);
+  const handleSendMessage = async () => {
+    if (!userInput.trim() || isLoading) return;
     
-    let currentIndex = 0;
-    const typingSpeed = 50; // milliseconds per character
-
-    const typingInterval = setInterval(() => {
-      if (currentIndex < aiSpeechText.length) {
-        setDisplayedText(aiSpeechText.slice(0, currentIndex + 1));
-        currentIndex++;
-      } else {
-        clearInterval(typingInterval);
-        setIsTypingComplete(true);
-      }
-    }, typingSpeed);
-
-    return () => clearInterval(typingInterval);
-  }, [userHasSentMessage]);
-
-  const handleSendMessage = () => {
-    if (!userInput.trim()) return;
-    // Handle sending the message here
-    console.log('User message:', userInput);
-    setUserHasSentMessage(true);
+    const message = userInput.trim();
     setUserInput('');
     
-    // Trigger processing animation in right panel
-    if (onProcessingChange) {
-      onProcessingChange(true);
-      // Stop processing after 6 seconds (when animation completes)
-      setTimeout(() => {
-        onProcessingChange(false);
-      }, 6000);
+    // Add user message to chat
+    setChatMessages(prev => [...prev, { role: 'user', content: message }]);
+    
+    // Start loading/processing
+    setIsLoading(true);
+    setHasStartedSession(true);
+    if (onProcessingChange) onProcessingChange(true);
+    
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          session_id: 'superbear-session',
+          user_profile: {
+            name: 'User',
+            tradingLevel: 'beginner',
+            learningStyle: 'visual',
+            riskTolerance: 'medium',
+            preferredMarkets: 'Stocks',
+            tradingFrequency: 'weekly',
+          },
+        }),
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
+      
+      const agentResponse: AgentResponse = await res.json();
+      
+      // Build the display text from agent response
+      const aiText = agentResponse.teaching_explanation || agentResponse.observation || 'I couldn\'t generate a response. Please try again.';
+      
+      // Add assistant message to chat
+      setChatMessages(prev => [...prev, {
+        role: 'assistant',
+        content: aiText,
+        agentResponse,
+      }]);
+      
+      // Send response to right panel
+      if (onAgentResponse) onAgentResponse(agentResponse);
+      
+    } catch (err) {
+      console.error('Chat error:', err);
+      const errorMsg = 'Sorry, I couldn\'t connect to the server. Make sure the backend is running.';
+      setChatMessages(prev => [...prev, { role: 'assistant', content: errorMsg }]);
+    } finally {
+      setIsLoading(false);
+      if (onProcessingChange) onProcessingChange(false);
     }
   };
 
@@ -139,9 +181,9 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
         </h1>
       </div>
 
-      {/* Bear Hero Section */}
-      <div className="pb-[220px] px-8 flex flex-col items-center gap-6">
-        {/* Context Card - Above Bear */}
+      {/* Bear Hero Section / Chat Area */}
+      <div ref={chatContainerRef} className="pb-[220px] px-8 flex flex-col items-center gap-6">
+        {/* Speech Bubble */}
         {speechBubbleVisible && (
           <div className="relative animate-fade-in max-w-[500px] w-full">
             <div className="bg-white border-[4px] border-black rounded-[20px] px-6 py-4 shadow-[6px_6px_0px_#000000]">
@@ -165,6 +207,43 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
             className="w-[320px] h-auto object-contain"
           />
         </div>
+
+        {/* Chat Messages */}
+        {chatMessages.length > 0 && (
+          <div className="max-w-[600px] w-full space-y-4 mt-4">
+            {chatMessages.map((msg, idx) => (
+              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[80%] rounded-[16px] px-5 py-3 border-[3px] border-black shadow-[4px_4px_0px_#000000] ${
+                  msg.role === 'user' 
+                    ? 'bg-[#3b82f6] text-white' 
+                    : 'bg-white text-black'
+                }`}>
+                  <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] leading-relaxed whitespace-pre-wrap">
+                    {msg.content}
+                  </p>
+                  {msg.agentResponse?.learning_concept && (
+                    <div className="mt-2 pt-2 border-t-2 border-black/20">
+                      <span className="font-['Arimo:Bold',sans-serif] font-bold text-[12px] text-[#22c55e] uppercase">
+                        📚 {msg.agentResponse.learning_concept}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-white/10 border-[3px] border-white/20 rounded-[16px] px-5 py-3">
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-2 h-2 bg-white/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Sticky Input - Always visible */}

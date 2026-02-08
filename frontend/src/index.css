@@ -2,8 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * ============================================================
+ *  TradeLingo Design System
+ *  A neo-brutalist, gamified trading education platform.
+ *
+ *  Brand palette
+ *  ─────────────
+ *  --tl-red          #ff1814   Primary brand / CTA backgrounds
+ *  --tl-yellow        #f3ff00   Accents, highlights, XP
+ *  --tl-green         #22c55e   Success, correct, streaks
+ *  --tl-dark          #0f172a   Profile / dark panels
+ *  --tl-charcoal      #1a1a1a   Therapy / SuperBear dark mode
+ *  --tl-blue          #3b82f6   Links & profile accents
+ * ============================================================
+ */
+
 @layer base {
   :root {
+    /* ── Brand tokens ── */
+    --tl-red: #ff1814;
+    --tl-yellow: #f3ff00;
+    --tl-green: #22c55e;
+    --tl-dark: #0f172a;
+    --tl-charcoal: #1a1a1a;
+    --tl-blue: #3b82f6;
+
+    /* ── shadcn/ui tokens ── */
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
@@ -28,7 +53,7 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    --radius: 0.625rem;
   }
 }
 
@@ -36,8 +61,50 @@
   * {
     @apply border-border;
   }
+
+  html {
+    scroll-behavior: smooth;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Arimo', ui-sans-serif, system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* ── Brand typography shorthand ── */
+  .font-brand {
+    font-family: 'Arimo', ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+  }
+
+  /* ── Selection colors ── */
+  ::selection {
+    background-color: var(--tl-yellow);
+    color: #000;
+  }
+
+  /* ── Focus‐visible ring (keyboard only) ── */
+  :focus-visible {
+    outline: 3px solid var(--tl-yellow);
+    outline-offset: 2px;
+  }
+
+  /* ── Scrollbar styling (WebKit) ── */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
   }
 }
 

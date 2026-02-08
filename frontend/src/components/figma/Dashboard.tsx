@@ -497,6 +497,7 @@ export default function Dashboard() {
   
   const [activeTab, setActiveTab] = useState(getActiveTab());
   const [isSuperBearProcessing, setIsSuperBearProcessing] = useState(false);
+  const [agentResponse, setAgentResponse] = useState<any>(null);
   const [dailyXP, setDailyXP] = useState(12); // Current daily XP (out of 20)
   const [totalXP, setTotalXP] = useState(1830); // Total lifetime XP for leaderboard
   
@@ -523,8 +524,8 @@ export default function Dashboard() {
         <Route path="therapy" element={<TradingTherapy />} />
         <Route path="superbear" element={
           <>
-            <SuperBear onProcessingChange={setIsSuperBearProcessing} />
-            <SuperBearRightPanel isProcessing={isSuperBearProcessing} />
+            <SuperBear onProcessingChange={setIsSuperBearProcessing} onAgentResponse={setAgentResponse} />
+            <SuperBearRightPanel isProcessing={isSuperBearProcessing} agentResponse={agentResponse} />
           </>
         } />
         <Route path="streaks" element={

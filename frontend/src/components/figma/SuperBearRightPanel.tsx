@@ -7,11 +7,23 @@ type ProcessStep = {
   status: 'pending' | 'active' | 'completed';
 };
 
-interface SuperBearRightPanelProps {
-  isProcessing?: boolean;
+interface AgentResponse {
+  observation: string;
+  analysis: string;
+  learning_concept: string;
+  why_it_matters: string;
+  teaching_explanation: string;
+  teaching_example: string;
+  actionable_takeaway: string;
+  next_learning_suggestion: string;
 }
 
-export default function SuperBearRightPanel({ isProcessing = false }: SuperBearRightPanelProps) {
+interface SuperBearRightPanelProps {
+  isProcessing?: boolean;
+  agentResponse?: AgentResponse | null;
+}
+
+export default function SuperBearRightPanel({ isProcessing = false, agentResponse = null }: SuperBearRightPanelProps) {
   const [progress, setProgress] = useState(0);
   const [steps, setSteps] = useState<ProcessStep[]>([
     { id: 1, label: 'Gathering trade data', status: 'pending' },
@@ -98,39 +110,57 @@ export default function SuperBearRightPanel({ isProcessing = false }: SuperBearR
       <div className="bg-[#1a1a1a] border-[3px] border-white/20 rounded-[16px] p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-white uppercase">
-            Recent Analysis
+            {agentResponse ? 'Latest Analysis' : 'Recent Analysis'}
           </h3>
-          <button className="font-['Arimo:Bold',sans-serif] font-bold text-[12px] text-[#3b82f6] uppercase">
-            View All
-          </button>
         </div>
         
         <div className="space-y-3">
-          {/* Analysis Item 1 */}
-          <div className="bg-white/5 border-[2px] border-white/10 rounded-[12px] p-3 cursor-pointer transition-all hover:bg-white/10 hover:border-white/20 hover:scale-105 active:scale-100">
-            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[12px] text-[#22c55e] uppercase mb-1">
-              Momentum Bias
-            </p>
-            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[13px] text-white/80">
-              Volatility 100 Trade
-            </p>
-            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[11px] text-white/50 uppercase mt-1">
-              2 hours ago
-            </p>
-          </div>
+          {agentResponse ? (
+            <>
+              {/* Learning Concept */}
+              <div className="bg-white/5 border-[2px] border-white/10 rounded-[12px] p-3">
+                <p className="font-['Arimo:Bold',sans-serif] font-bold text-[12px] text-[#22c55e] uppercase mb-1">
+                  {agentResponse.learning_concept || 'Concept'}
+                </p>
+                <p className="font-['Arimo:Bold',sans-serif] font-bold text-[13px] text-white/80">
+                  {agentResponse.why_it_matters || ''}
+                </p>
+              </div>
 
-          {/* Analysis Item 2 */}
-          <div className="bg-white/5 border-[2px] border-white/10 rounded-[12px] p-3 cursor-pointer transition-all hover:bg-white/10 hover:border-white/20 hover:scale-105 active:scale-100">
-            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[12px] text-[#f59e0b] uppercase mb-1">
-              Risk Management
-            </p>
-            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[13px] text-white/80">
-              EUR/USD Trade
-            </p>
-            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[11px] text-white/50 uppercase mt-1">
-              Yesterday
-            </p>
-          </div>
+              {/* Actionable Takeaway */}
+              {agentResponse.actionable_takeaway && (
+                <div className="bg-white/5 border-[2px] border-white/10 rounded-[12px] p-3">
+                  <p className="font-['Arimo:Bold',sans-serif] font-bold text-[12px] text-[#f59e0b] uppercase mb-1">
+                    Actionable Takeaway
+                  </p>
+                  <p className="font-['Arimo:Bold',sans-serif] font-bold text-[13px] text-white/80">
+                    {agentResponse.actionable_takeaway}
+                  </p>
+                </div>
+              )}
+
+              {/* Next Learning Suggestion */}
+              {agentResponse.next_learning_suggestion && (
+                <div className="bg-white/5 border-[2px] border-white/10 rounded-[12px] p-3">
+                  <p className="font-['Arimo:Bold',sans-serif] font-bold text-[12px] text-[#3b82f6] uppercase mb-1">
+                    Next Up
+                  </p>
+                  <p className="font-['Arimo:Bold',sans-serif] font-bold text-[13px] text-white/80">
+                    {agentResponse.next_learning_suggestion}
+                  </p>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Default placeholder items */}
+              <div className="bg-white/5 border-[2px] border-white/10 rounded-[12px] p-3 cursor-pointer transition-all hover:bg-white/10 hover:border-white/20 hover:scale-105 active:scale-100">
+                <p className="font-['Arimo:Bold',sans-serif] font-bold text-[13px] text-white/50">
+                  Send a message to SuperBear to get your first analysis!
+                </p>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
