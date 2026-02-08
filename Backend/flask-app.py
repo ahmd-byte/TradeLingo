@@ -1,16 +1,22 @@
-# flask_app.py
-from flask import Flask, render_template, request, redirect
+# app.py
+"""
+TradeLingo Flask Application
+Integrates the Single AI Trading Tutor Agent with Flask and Sheety backend.
+"""
+
+from flask import Flask, render_template, request
 import requests
 import os
 from dotenv import load_dotenv
-from google import genai
-
+from agent import run_agent
+from memory import LearningMemory
 
 load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-app = Flask(__name__)
+template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../Frontend/templates'))
+app = Flask(__name__, template_folder=template_dir)
 
+# Sheety Configuration
 PROFILES_ENDPOINT = os.getenv("PROFILES_SHEETY_ENDPOINT")
 TRADES_ENDPOINT = os.getenv("PAST_TRADES_SHEETY_ENDPOINT")
 SHEETY_TOKEN = os.getenv("SHEETY_TOKEN")
@@ -19,6 +25,9 @@ HEADERS = {
     "Authorization": f"Bearer {SHEETY_TOKEN}",
     "Content-Type": "application/json"
 }
+
+# Session memory (in production, use persistent storage like Redis or DB)
+session_memory = {}
 
 
 def create_profile(form_data):
@@ -66,82 +75,157 @@ def post_trade(form_data, profile_id):
         return None
     return response.json()
 
-def generate_personalized_education(profile_data):
-    client = genai.Client(api_key=GEMINI_API_KEY)
-
-    prompt = (
-        f"User Profile:\n"
-        f"- Name: {profile_data.get('name')}\n"
-        f"- Trading Level: {profile_data.get('tradingLevel')}\n"
-        f"- Learning Style: {profile_data.get('learningStyle')}\n"
-        f"- Risk Tolerance: {profile_data.get('riskTolerance')}\n"
-        f"- Preferred Markets: {profile_data.get('preferredMarkets')}\n"
-        f"- Trading Frequency: {profile_data.get('tradingFrequency')}\n\n"
-        "Task: Create a short personalized trading education module for this user. "
-        "Focus on lessons, exercises, or concepts that match their profile. "
-        "Structure it clearly and make it actionable. Do not give generic trading tips."
-    )
-
-    response = client.models.generate_content(
-        model="gemini-2.5-flash-lite",
-        contents=prompt,
-    )
-
-    return response.text
-
-def format_education_plain(raw_text):
+def get_or_create_session_memory(profile_id):
     """
-    Converts Gemini output into simple HTML:
-    - Headers, bold, italic
-    - Lists
-    - Exercises highlighted
-    - Everything expanded, no collapsible sections
+    Get or create learning memory for a user session.
+    
+    In a production app, this would load from a database or Redis.
+    For now, we use an in-memory dictionary.
+    
+    Args:
+        profile_id (str): The user's profile ID from Sheety
+    
+    Returns:
+        LearningMemory: The user's learning memory
+    """
+    if profile_id not in session_memory:
+        session_memory[profile_id] = LearningMemory()
+    return session_memory[profile_id]
+
+
+def run_tutor_agent(profile_data, trade_data=None):
+    """
+    Run the Tutor Agent with the user's profile and optional trade data.
+    
+    Args:
+        profile_data (dict): User profile from form
+        trade_data (dict): Optional trade data from form
+    
+    Returns:
+        dict: Structured response from the agent
+    """
+    # Get or create session memory for this user
+    profile_id = profile_data.get("id", "temp")
+    memory = get_or_create_session_memory(profile_id)
+    
+    # Prepare input for agent
+    input_data = {
+        "user_profile": profile_data,
+        "trade_data": trade_data if trade_data else None,
+        "user_question": profile_data.get("user_question", None)
+    }
+    
+    # Run the agent
+    response, updated_memory = run_agent(input_data, memory=memory)
+    
+    # Update session memory
+    session_memory[profile_id] = updated_memory
+    
+    return response
+
+def format_agent_response_for_html(agent_response):
+    """
+    Format the structured agent response for HTML display.
+    
+    Converts the JSON response fields into a readable HTML format.
+    
+    Args:
+        agent_response (dict): Structured response from the agent
+    
+    Returns:
+        dict: Formatted response ready for template rendering
+    """
+    formatted = {
+        "observation": agent_response.get("observation", ""),
+        "analysis": agent_response.get("analysis", ""),
+        "learning_concept": agent_response.get("learning_concept", ""),
+        "why_it_matters": agent_response.get("why_it_matters", ""),
+        "teaching_explanation": format_text_to_html(agent_response.get("teaching_explanation", "")),
+        "teaching_example": format_text_to_html(agent_response.get("teaching_example", "")),
+        "actionable_takeaway": agent_response.get("actionable_takeaway", ""),
+        "next_learning_suggestion": agent_response.get("next_learning_suggestion", "")
+    }
+    
+    return formatted
+
+
+def format_text_to_html(text):
+    """
+    Convert plain text to simple HTML.
+    
+    Handles:
+    - Line breaks
+    - Bold (**text**)
+    - Italic (*text*)
+    
+    Args:
+        text (str): Plain text with markdown-like formatting
+    
+    Returns:
+        str: HTML formatted text
     """
     import re
-
-    html = raw_text
-
-    # Exercises
-    html = re.sub(r'### Exercise \d+: (.+)', r'<div class="exercise"><strong>Exercise:</strong> \1</div>', html)
-
-    # Headings
-    html = re.sub(r'### (.+)', r'<h3>\1</h3>', html)
-    html = re.sub(r'## (.+)', r'<h2>\1</h2>', html)
-    html = re.sub(r'# (.+)', r'<h1>\1</h1>', html)
-
-    # Bold / italic
+    
+    html = text
+    
+    # Bold
     html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
+    
+    # Italic
     html = re.sub(r'\*(.+?)\*', r'<em>\1</em>', html)
-
-    # Unordered lists
-    html = re.sub(r'^\* (.+)$', r'<li>\1</li>', html, flags=re.MULTILINE)
-    html = re.sub(r'(<li>.+</li>)', r'<ul>\1</ul>', html, flags=re.DOTALL)
-    html = re.sub(r'</ul>\s*<ul>', '', html)
-
+    
     # Line breaks
     html = html.replace('\n', '<br>')
-
+    
     return html
 
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    education = None
+    """
+    Main Flask route.
+    
+    Handles:
+    1. Form submission (GET: show form, POST: process)
+    2. Profile creation via Sheety
+    3. Trade recording via Sheety (optional)
+    4. Agent execution and response formatting
+    5. Rendering structured education content
+    """
+    agent_response = None
+    error_message = None
+    
     if request.method == "POST":
         form = request.form
         try:
+            # Step 1: Create user profile
             profile_id, profile_resp = create_profile(form)
-            trade_resp = post_trade(form, profile_id)
-
-            raw_education = generate_personalized_education(form)
-
-            # Format before sending to template
-            education = format_education_plain(raw_education)
-
+            profile_data = profile_resp.get("profiling", {})
+            
+            # Step 2: Record trade (optional)
+            trade_data = None
+            stock_code = form.get("stock_code")
+            stock_name = form.get("stock_name")
+            
+            if stock_code or stock_name:
+                trade_resp = post_trade(form, profile_id)
+                if trade_resp:
+                    trade_data = trade_resp.get("pasttrade", {})
+            
+            # Step 3: Run the tutor agent
+            llm_response = run_tutor_agent(profile_data, trade_data=trade_data)
+            
+            # Step 4: Format for HTML display
+            agent_response = format_agent_response_for_html(llm_response)
+        
         except Exception as e:
-            return str(e)
-
-    return render_template("index.html", education=education)
+            error_message = str(e)
+    
+    return render_template(
+        "index.html",
+        agent_response=agent_response,
+        error_message=error_message
+    )
 
 
 # @app.route("/", methods=["GET", "POST"])

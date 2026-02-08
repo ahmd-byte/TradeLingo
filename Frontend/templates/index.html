@@ -1,63 +1,241 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Trading Profile & Education</title>
+    <title>TradeLingo - AI Trading Tutor</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .agent-response {
+            background: #f9f9f9;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        
+        .response-section {
+            margin-bottom: 20px;
+        }
+        
+        .response-section h3 {
+            color: #1976D2;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .learning-concept {
+            background: #E3F2FD;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: 500;
+            color: #0D47A1;
+        }
+        
+        .teaching-content {
+            line-height: 1.6;
+            color: #333;
+            margin: 10px 0;
+        }
+        
+        .actionable-takeaway {
+            background: #FFF3E0;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #FF9800;
+        }
+        
+        .error-message {
+            background: #FFEBEE;
+            border-left: 4px solid #F44336;
+            color: #C62828;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+        
+        .form-section {
+            background: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        button {
+            background: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background: #1976D2;
+        }
+    </style>
 </head>
 <body>
-    <h1>Trader Profile & Past Trade</h1>
-    <form method="POST">
-        <h2>Profile Info</h2>
-        <label>Name:</label><br>
-        <input type="text" name="name" placeholder="Name" required><br>
-
-        <label>Trading Level:</label><br>
-        <input type="text" name="tradingLevel" placeholder="Trading Level" required><br>
-
-        <label>Learning Style:</label><br>
-        <input type="text" name="learningStyle" placeholder="Learning Style" required><br>
-
-        <label>Risk Tolerance:</label><br>
-        <input type="text" name="riskTolerance" placeholder="Risk Tolerance" required><br>
-
-        <label>Preferred Markets:</label><br>
-        <input type="text" name="preferredMarkets" placeholder="Preferred Markets" required><br>
-
-        <label>Trading Frequency:</label><br>
-        <input type="text" name="tradingFrequency" placeholder="Trading Frequency" required><br>
-
-        <h2>Past Trade Info (optional)</h2>
-        <label>Trade Date:</label><br>
-        <input type="date" name="date"><br>
-
-        <label>Stock Code:</label><br>
-        <input type="text" name="stock_code" placeholder="Stock Code"><br>
-
-        <label>Stock Name:</label><br>
-        <input type="text" name="stock_name" placeholder="Stock Name"><br>
-
-        <label>Action (BUY/SELL):</label><br>
-        <input type="text" name="action" placeholder="Action (BUY/SELL)" required><br>
-
-        <label>Units:</label><br>
-        <input type="number" name="units" placeholder="Units" required><br>
-
-        <label>Price:</label><br>
-        <input type="number" step="0.01" name="price" placeholder="Price" required><br>
-
-        <label>Intraday (Yes/No):</label><br>
-        <input type="text" name="intraday" placeholder="Intraday (Yes/No)" required><br>
-
-        <button type="submit">Submit</button>
-    </form>
-
-    {% if education %}
-        <h2>Your Personalized Trading Education</h2>
-        <div style="border:1px solid #ccc; padding:10px; margin-top:10px;">
-            {{ education | safe }}
+    <div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+        <h1>🎓 TradeLingo - AI Trading Tutor</h1>
+        <p style="color: #666;">Education-focused trading guidance powered by AI</p>
+        
+        <div class="form-section">
+            <h2>Trader Profile & Learning Context</h2>
+            <form method="POST">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label><strong>Name:</strong></label>
+                        <input type="text" name="name" placeholder="Your name" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label><strong>Trading Level:</strong></label>
+                        <input type="text" name="tradingLevel" placeholder="e.g., beginner, intermediate, advanced" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label><strong>Learning Style:</strong></label>
+                        <input type="text" name="learningStyle" placeholder="e.g., visual, analytical, kinesthetic" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label><strong>Risk Tolerance:</strong></label>
+                        <input type="text" name="riskTolerance" placeholder="e.g., conservative, moderate, aggressive" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label><strong>Preferred Markets:</strong></label>
+                        <input type="text" name="preferredMarkets" placeholder="e.g., stocks, forex, crypto" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label><strong>Trading Frequency:</strong></label>
+                        <input type="text" name="tradingFrequency" placeholder="e.g., weekly, daily, very frequently" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 20px;">Past Trade Info (Optional)</h3>
+                <p style="color: #666; font-size: 14px;">Leave empty if you want general education</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label><strong>Trade Date:</strong></label>
+                        <input type="date" name="date" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label><strong>Stock/Asset Code:</strong></label>
+                        <input type="text" name="stock_code" placeholder="e.g., AAPL, EURUSD" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label><strong>Asset Name:</strong></label>
+                        <input type="text" name="stock_name" placeholder="e.g., Apple, EUR/USD" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label><strong>Action:</strong></label>
+                        <input type="text" name="action" placeholder="BUY or SELL" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label><strong>Units:</strong></label>
+                        <input type="number" name="units" placeholder="Number of units" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label><strong>Entry Price:</strong></label>
+                        <input type="number" step="0.001" name="price" placeholder="Price per unit" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    
+                    <div>
+                        <label><strong>Intraday Trade:</strong></label>
+                        <input type="text" name="intraday" placeholder="Yes or No" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                </div>
+                
+                <button type="submit" style="margin-top: 20px;">Get AI Tutoring</button>
+            </form>
         </div>
-    {% endif %}
-
+        
+        {% if error_message %}
+            <div class="error-message">
+                <strong>Error:</strong> {{ error_message }}
+            </div>
+        {% endif %}
+        
+        {% if agent_response %}
+            <div class="agent-response">
+                <h2>📚 Your Personalized Trading Lesson</h2>
+                
+                {% if agent_response.observation %}
+                    <div class="response-section">
+                        <h3>🔍 Current Situation</h3>
+                        <p class="teaching-content">{{ agent_response.observation }}</p>
+                    </div>
+                {% endif %}
+                
+                {% if agent_response.analysis %}
+                    <div class="response-section">
+                        <h3>🔎 Analysis</h3>
+                        <p class="teaching-content">{{ agent_response.analysis }}</p>
+                    </div>
+                {% endif %}
+                
+                {% if agent_response.learning_concept %}
+                    <div class="response-section">
+                        <h3>💡 Today's Concept</h3>
+                        <div class="learning-concept">
+                            {{ agent_response.learning_concept }}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if agent_response.why_it_matters %}
+                    <div class="response-section">
+                        <h3>⭐ Why It Matters</h3>
+                        <p class="teaching-content">{{ agent_response.why_it_matters }}</p>
+                    </div>
+                {% endif %}
+                
+                {% if agent_response.teaching_explanation %}
+                    <div class="response-section">
+                        <h3>📖 Explanation</h3>
+                        <div class="teaching-content">
+                            {{ agent_response.teaching_explanation | safe }}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if agent_response.teaching_example %}
+                    <div class="response-section">
+                        <h3>🎯 Practical Example</h3>
+                        <div class="teaching-content">
+                            {{ agent_response.teaching_example | safe }}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if agent_response.actionable_takeaway %}
+                    <div class="actionable-takeaway">
+                        <h3 style="margin-top: 0;">✅ Action Item</h3>
+                        <p style="margin-bottom: 0;">{{ agent_response.actionable_takeaway }}</p>
+                    </div>
+                {% endif %}
+                
+                {% if agent_response.next_learning_suggestion %}
+                    <div class="response-section">
+                        <h3>🚀 Next Steps</h3>
+                        <p class="teaching-content">{{ agent_response.next_learning_suggestion }}</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
