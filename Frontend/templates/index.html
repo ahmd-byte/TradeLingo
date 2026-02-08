@@ -37,19 +37,26 @@
         <input type="text" name="stock_name" placeholder="Stock Name"><br>
 
         <label>Action (BUY/SELL):</label><br>
-        <input type="text" name="action" placeholder="Action (BUY/SELL)" required><br>
+        <input type="text" name="action" placeholder="Action (BUY/SELL)"><br>
 
         <label>Units:</label><br>
-        <input type="number" name="units" placeholder="Units" required><br>
+        <input type="number" name="units" placeholder="Units"><br>
 
         <label>Price:</label><br>
-        <input type="number" step="0.01" name="price" placeholder="Price" required><br>
+        <input type="number" step="0.01" name="price" placeholder="Price"><br>
 
         <label>Intraday (Yes/No):</label><br>
-        <input type="text" name="intraday" placeholder="Intraday (Yes/No)" required><br>
+        <input type="text" name="intraday" placeholder="Intraday (Yes/No)"><br>
 
         <button type="submit">Submit</button>
     </form>
+
+    {% if past_lessons %}
+    <h2>Past Lessons</h2>
+    {% for lesson in past_lessons %}
+        <div class="past-lesson">{{ lesson|safe }}</div>
+    {% endfor %}
+    {% endif %}
 
     {% if education %}
         <h2>Your Personalized Trading Education</h2>
