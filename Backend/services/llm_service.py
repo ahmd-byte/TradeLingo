@@ -4,9 +4,9 @@ Handles all interactions with the Gemini API.
 Ensures structured JSON output for deterministic processing.
 """
 
+import asyncio
 import json
 import os
-import time
 import re
 from google import genai
 from dotenv import load_dotenv
@@ -34,12 +34,14 @@ class LLMService:
             return float(match.group(1)) + 1  # add 1s buffer
         return DEFAULT_RETRY_DELAY
     
-    def _call_with_retry(self, prompt):
-        """Call Gemini with automatic retry on rate limit (429)."""
+    async def _call_with_retry(self, prompt):
+        """Call Gemini with automatic retry on rate limit (429). Non-blocking."""
         last_error = None
         for attempt in range(MAX_RETRIES):
             try:
-                response = self.client.models.generate_content(
+                # Run the synchronous SDK call in a thread to avoid blocking the event loop
+                response = await asyncio.to_thread(
+                    self.client.models.generate_content,
                     model=self.model,
                     contents=prompt,
                 )
@@ -50,12 +52,12 @@ class LLMService:
                     delay = self._extract_retry_delay(error_str)
                     print(f"[LLM] Rate limited (attempt {attempt + 1}/{MAX_RETRIES}). Retrying in {delay:.0f}s...")
                     last_error = e
-                    time.sleep(delay)
+                    await asyncio.sleep(delay)
                 else:
                     raise RuntimeError(f"LLM API call failed: {e}")
         raise RuntimeError(f"LLM API call failed after {MAX_RETRIES} retries: {last_error}")
     
-    def call_gemini_json(self, prompt, json_schema=None):
+    async def call_gemini_json(self, prompt, json_schema=None):
         """
         Call Gemini and extract structured JSON response.
         
@@ -74,7 +76,7 @@ class LLMService:
             "Respond with raw JSON only."
         )
         
-        response = self._call_with_retry(prompt_with_json_instruction)
+        response = await self._call_with_retry(prompt_with_json_instruction)
         
         response_text = response.text.strip()
         
@@ -94,7 +96,7 @@ class LLMService:
         except json.JSONDecodeError as e:
             raise ValueError(f"Failed to parse Gemini response as JSON: {e}\nResponse: {response_text}")
     
-    def call_gemini_text(self, prompt):
+    async def call_gemini_text(self, prompt):
         """
         Call Gemini for plain text response (no JSON parsing).
         
@@ -104,7 +106,7 @@ class LLMService:
         Returns:
             str: Text response
         """
-        response = self._call_with_retry(prompt)
+        response = await self._call_with_retry(prompt)
         return response.text
 
 
