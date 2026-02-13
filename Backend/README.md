@@ -2,6 +2,7 @@
   <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
   <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
   <img src="https://img.shields.io/badge/MongoDB-7.0-13AA52?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/LangGraph-0.1.13-FF6F00?style=for-the-badge&logo=graphql&logoColor=white" alt="LangGraph" />
   <img src="https://img.shields.io/badge/Gemini_AI-2.5_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Gemini" />
   <img src="https://img.shields.io/badge/JWT-Auth-FFA500?style=for-the-badge&logo=auth0&logoColor=white" alt="JWT" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
@@ -9,7 +10,7 @@
 
 # 🐻 TradeLingo Backend — AI Trading Tutor Agent
 
-> A modern, modular AI agent system with JWT authentication and MongoDB persistence. Delivers personalized trading education through a structured **OBSERVE → ANALYZE → DECIDE → TEACH** decision loop, powered by Google Gemini and FastAPI.
+> A modern, modular AI agent system with JWT authentication and MongoDB persistence. Delivers personalized trading education and emotional wellness coaching through a **LangGraph-based agentic workflow** with automatic intent detection and conditional routing, powered by Google Gemini and FastAPI.
 
 ---
 
@@ -20,29 +21,34 @@ User Question / Trade Data
         │
         ▼
 ┌───────────────────┐
-│    OBSERVE        │  ← Gather context (trade, question, profile)
+│   INPUT NODE      │  ← Validate & parse user message
 └───────┬───────────┘
         │
         ▼
 ┌───────────────────┐
-│    ANALYZE        │  ← Identify patterns, gaps, and learning opportunities
+│  CLASSIFY NODE    │  ← Detect intent: research / therapy / both
 └───────┬───────────┘
         │
-        ▼
-┌───────────────────┐
-│    DECIDE         │  ← Choose one concept to teach (via LLM)
-└───────┬───────────┘
-        │
-        ▼
-┌───────────────────┐
-│    TEACH          │  ← Generate structured educational content
-└───────────────────┘
-        │
-        ▼
-  JSON Response → Frontend
+   ┌────┴─────┐
+   │            │
+   ▼            ▼
+┌────────┐  ┌─────────┐
+│RESEARCH│  │ THERAPY │  ← Parallel execution if intent="both"
+│ (OADT) │  │ (VACE)  │
+└────┬───┘  └────┬────┘
+     │            │
+     └────┬─────┘
+          │
+          ▼
+   ┌───────────┐
+   │ MERGE NODE│  ← Combine & prioritize outputs
+   └───────────┘
+          │
+          ▼
+   JSON Response → Frontend
 ```
 
-The agent processes each interaction through this loop and returns a structured JSON response with observations, analysis, teaching content, and next steps — all personalized to the user's trading level and learning style.
+The **SuperBear LangGraph** automatically classifies user intent and routes to the appropriate node(s). Research uses the OADT loop (Observe → Analyze → Decide → Teach), while therapy uses the VACE framework (Validate → Analyze → Coach → Empower). Both are personalized to the user's trading level and learning style.
 
 ---
 
@@ -57,15 +63,24 @@ Backend/
 ├── auth/                     # 🔐 JWT Authentication
 │   ├── __init__.py
 │   ├── config.py             # JWT & auth configuration
-│   ├── models.py             # Pydantic models (UserInDB, UserCreate, etc.)
-│   ├── schemas.py            # API request/response schemas
+│   ├── models.py             # Pydantic v2 models (UserInDB, UserCreate, etc.)
+│   ├── schemas.py            # API request/response schemas (UserResponse lives here)
 │   ├── utils.py              # Password hashing & JWT token generation
 │   ├── dependencies.py       # FastAPI dependency injection
 │   └── routes.py             # Auth endpoints (/register, /login, /refresh, etc.)
 │
-├── agent/                    # 🤖 AI Agent logic
+├── agent/                    # 🤖 SuperBear LangGraph Agent
 │   ├── __init__.py
-│   └── tutor_agent.py        # TutorAgent class (OADT decision loop)
+│   ├── graph.py              # LangGraph workflow definition & execution
+│   ├── state.py              # AgentState (shared state across all nodes)
+│   ├── tutor_agent.py        # Legacy TutorAgent class (OADT decision loop)
+│   └── nodes/                # Graph nodes
+│       ├── __init__.py
+│       ├── input_node.py     # Entry point: validate user input
+│       ├── intent_node.py    # Detect intent: research vs therapy vs both
+│       ├── research_node.py  # Educational: OADT trading concepts
+│       ├── therapy_node.py   # Wellness: VACE psychology coaching
+│       └── merge_node.py     # Combine outputs from parallel nodes
 │
 ├── memory/                   # 🧠 Session memory management
 │   ├── __init__.py
@@ -73,15 +88,18 @@ Backend/
 │
 ├── prompts/                  # 📝 Prompt engineering
 │   ├── __init__.py
-│   └── tutor_prompt.py       # Prompt templates & builders
+│   ├── intent_prompt.py      # Intent classification prompts
+│   ├── research_prompt.py    # Educational content generation
+│   ├── therapy_prompt.py     # Wellness coaching prompts
+│   └── tutor_prompt.py       # Legacy tutor prompt templates
 │
 ├── services/                 # 🔗 External services
 │   ├── __init__.py
-│   └── llm_service.py        # Google Gemini API wrapper
+│   └── llm_service.py        # Async Gemini API wrapper with JSON parsing
 │
 ├── ARCHITECTURE.md           # Detailed architecture documentation
 ├── requirements.txt          # Python dependencies
-├── .env.example              # Environment variable template
+├── test_agent.py             # Unit tests for SuperBear graph
 └── README.md                 # You are here
 ```
 
@@ -273,9 +291,9 @@ Content-Type: application/json
   "message": "What is a stock?",
   "session_id": "user-session-123",
   "user_profile": {
-    "tradingLevel": "beginner",
-    "learningStyle": "visual",
-    "riskTolerance": "medium"
+    "trading_level": "beginner",
+    "learning_style": "visual",
+    "risk_tolerance": "medium"
   },
   "trade_data": {
     "stockCode": "AAPL",
@@ -349,15 +367,27 @@ Content-Type: application/json
 
 ### `TutorAgent` — The Brain
 
-The main agent class implementing the OADT educational loop. It orchestrates the entire flow from receiving user input to generating teaching content.
+The **SuperBear LangGraph** is the main agent system. It uses a graph-based workflow that automatically detects user intent and routes to the appropriate processing nodes:
+
+- **Research Node** (OADT loop): Educational trading concepts
+- **Therapy Node** (VACE framework): Emotional wellness coaching
+- **Merge Node**: Combines outputs when both modes are needed
 
 ```python
-from agent import run_agent
-from memory import LearningMemory
+from agent.graph import superbear_graph
+from agent.state import AgentState
 
-memory = LearningMemory()
-response, updated_memory = run_agent(input_data, memory=memory)
+state = AgentState(
+    user_message="What is position sizing?",
+    user_id="user-123",
+    user_profile={"trading_level": "beginner"},
+    session_id="session-456",
+    timestamp="2026-02-13T10:30:00Z"
+)
+result = await superbear_graph.ainvoke(state)
 ```
+
+The legacy `TutorAgent` class (`agent/tutor_agent.py`) is still available for standalone OADT usage.
 
 ### `LearningMemory` — The Memory
 
@@ -373,16 +403,19 @@ Tracks the user's learning journey across sessions:
 
 ### `LLMService` — The Voice
 
-Wrapper around the **Google Gemini 2.5 Flash Lite** model, handling:
+Async wrapper around the **Google Gemini 2.5 Flash Lite** model, handling:
+- Fully async calls via `asyncio.to_thread` (non-blocking event loop)
 - Structured JSON output enforcement
 - Markdown cleanup
+- Rate-limit retry with `asyncio.sleep`
 - Error handling and retries
 
 ### `Prompt Builder` — The Script
 
-Constructs contextual prompts that guide the agent's decision loop, incorporating:
-- User profile & trading level
+Constructs contextual prompts that guide the agent's nodes, incorporating:
+- User profile & trading level (snake_case field names: `trading_level`, `learning_style`, `risk_tolerance`)
 - Session memory & history
+- Intent classification (research / therapy / both)
 - Educational focus (NOT trading signals)
 
 ---
