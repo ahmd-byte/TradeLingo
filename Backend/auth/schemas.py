@@ -30,7 +30,7 @@ class UserRegisterRequest(BaseModel):
     """Request model for user registration."""
     email: EmailStr = Field(..., description="User email address")
     username: str = Field(..., min_length=3, max_length=50, description="Username")
-    password: str = Field(..., min_length=8, description="Password (min 8 characters)")
+    password: str = Field(..., min_length=1, description="Password")
     trading_level: Optional[str] = Field("beginner", description="Trading experience level")
     learning_style: Optional[str] = Field("visual", description="Preferred learning style")
     risk_tolerance: Optional[str] = Field("medium", description="Risk tolerance level")
