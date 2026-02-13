@@ -3,33 +3,37 @@ User data models for MongoDB.
 Pydantic models for data validation and serialization.
 """
 
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from pydantic import BaseModel, EmailStr, Field, field_validator
+from typing import Optional, Any, Annotated
 from datetime import datetime
 from bson import ObjectId
 
 
-class PyObjectId(ObjectId):
-    """Custom type for MongoDB ObjectId in Pydantic."""
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+class PyObjectId(str):
+    """Custom type for MongoDB ObjectId compatible with Pydantic v2."""
 
     @classmethod
-    def validate(cls, v):
-        if isinstance(v, ObjectId):
-            return v
-        if isinstance(v, str):
-            try:
-                return ObjectId(v)
-            except:
-                raise ValueError(f"Invalid ObjectId: {v}")
-        raise TypeError(f"ObjectId required, got {type(v)}")
+    def __get_pydantic_core_schema__(cls, _source_type, _handler):
+        from pydantic_core import core_schema
+
+        def validate(value: Any) -> str:
+            if isinstance(value, ObjectId):
+                return str(value)
+            if isinstance(value, str):
+                if ObjectId.is_valid(value):
+                    return value
+                raise ValueError(f"Invalid ObjectId: {value}")
+            raise TypeError(f"ObjectId or string required, got {type(value)}")
+
+        return core_schema.no_info_plain_validator_function(
+            validate,
+            serialization=core_schema.plain_serializer_function_ser_schema(str),
+        )
 
 
 class UserInDB(BaseModel):
     """User model as stored in MongoDB."""
-    id: PyObjectId = Field(default_factory=ObjectId, alias="_id")
+    id: PyObjectId = Field(default_factory=lambda: str(ObjectId()), alias="_id")
     email: str
     username: Optional[str] = None
     hashed_password: str
@@ -42,16 +46,15 @@ class UserInDB(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        populate_by_name = True
-        json_encoders = {ObjectId: str}
-        arbitrary_types_allowed = True
+    model_config = {
+        "populate_by_name": True,
+        "arbitrary_types_allowed": True,
+        "json_encoders": {ObjectId: str},
+    }
 
     def to_dict(self):
         """Convert to dictionary for MongoDB operations."""
-        data = self.dict(by_alias=True)
-        if "_id" in data and isinstance(data["_id"], ObjectId):
-            data["_id"] = str(data["_id"])
+        data = self.model_dump(by_alias=True)
         return data
 
 
@@ -81,29 +84,7 @@ class UserUpdate(BaseModel):
         exclude_unset = True
 
 
-class UserResponse(BaseModel):
-    """User data response (excludes password)."""
-    id: str = Field(alias="_id")
-    email: str
-    username: Optional[str] = None
-    trading_level: str
-    learning_style: str
-    risk_tolerance: str
-    preferred_markets: str
-    trading_frequency: str
-    is_active: bool
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-
-    @staticmethod
-    def from_user_db(user: UserInDB) -> "UserResponse":
-        """Create response from UserInDB model."""
-        return UserResponse(
-            **user.dict(by_alias=True)
-        )
+# UserResponse is defined in auth.schemas to avoid duplication.
+# Import it here for backwards compatibility.
+from auth.schemas import UserResponse  # noqa: E402
 
