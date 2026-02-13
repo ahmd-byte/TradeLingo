@@ -18,7 +18,7 @@ from typing import Optional, Dict, Any
 from agent.graph import superbear_graph
 from agent.state import AgentState
 from memory import LearningMemory
-from database import connect_to_mongo, close_mongo_connection, db
+from database import connect_to_mongo, close_mongo_connection, get_database
 from auth.schemas import UserResponse
 from auth.routes import router as auth_router
 from auth.dependencies import get_current_active_user
@@ -146,8 +146,10 @@ async def chat(
     Returns merged response based on detected intent.
     """
     try:
+        database = get_database()
+
         # Load user's memory from MongoDB
-        memory_doc = await db.memories.find_one({"user_id": str(current_user.id)})
+        memory_doc = await database["memories"].find_one({"user_id": str(current_user.id)})
 
         # Build user profile from authenticated user
         user_profile = {
@@ -181,29 +183,32 @@ async def chat(
                 "emotional_patterns": [],
             }
 
-        if result.research_output:
+        research_output = result.get("research_output")
+        therapy_output = result.get("therapy_output")
+
+        if research_output:
             memory_doc["concepts_taught"].append({
-                "concept": result.research_output.get("learning_concept"),
-                "explanation": result.research_output.get("teaching_explanation"),
-                "timestamp": result.timestamp,
+                "concept": research_output.get("learning_concept"),
+                "explanation": research_output.get("teaching_explanation"),
+                "timestamp": result.get("timestamp"),
             })
 
-        if result.therapy_output:
+        if therapy_output:
             memory_doc["emotional_patterns"].append({
-                "emotion": result.therapy_output.get("emotional_state"),
+                "emotion": therapy_output.get("emotional_state"),
                 "trigger": request.message[:100],  # Store first 100 chars as trigger
-                "timestamp": result.timestamp,
+                "timestamp": result.get("timestamp"),
             })
 
         # Save updated memory to MongoDB
-        await db.memories.update_one(
+        await database["memories"].update_one(
             {"user_id": str(current_user.id)},
             {"$set": memory_doc},
             upsert=True,
         )
 
-        logger.info(f"Chat request from user: {current_user.email}, intent: {result.intent}")
-        return result.final_output or {"error": "No output generated"}
+        logger.info(f"Chat request from user: {current_user.email}, intent: {result.get('intent')}")
+        return result.get("final_output") or {"error": "No output generated"}
 
     except Exception as e:
         logger.error(f"Error in /api/chat: {e}", exc_info=True)
@@ -229,8 +234,10 @@ async def therapy(
     Returns wellness-focused response with emotional support and coping strategies.
     """
     try:
+        database = get_database()
+
         # Load user's memory from MongoDB
-        memory_doc = await db.memories.find_one({"user_id": str(current_user.id)})
+        memory_doc = await database["memories"].find_one({"user_id": str(current_user.id)})
 
         # Build user profile from authenticated user
         user_profile = {
@@ -264,28 +271,31 @@ async def therapy(
                 "emotional_patterns": [],
             }
 
-        if result.therapy_output:
+        therapy_output = result.get("therapy_output")
+        research_output = result.get("research_output")
+
+        if therapy_output:
             memory_doc["emotional_patterns"].append({
-                "emotion": result.therapy_output.get("emotional_state"),
+                "emotion": therapy_output.get("emotional_state"),
                 "trigger": request.message[:100],
-                "timestamp": result.timestamp,
+                "timestamp": result.get("timestamp"),
             })
 
-        if result.research_output:
+        if research_output:
             memory_doc["concepts_taught"].append({
-                "concept": result.research_output.get("learning_concept"),
-                "timestamp": result.timestamp,
+                "concept": research_output.get("learning_concept"),
+                "timestamp": result.get("timestamp"),
             })
 
         # Save updated memory to MongoDB
-        await db.memories.update_one(
+        await database["memories"].update_one(
             {"user_id": str(current_user.id)},
             {"$set": memory_doc},
             upsert=True,
         )
 
-        logger.info(f"Therapy request from user: {current_user.email}, intent: {result.intent}")
-        return result.final_output or {"error": "No output generated"}
+        logger.info(f"Therapy request from user: {current_user.email}, intent: {result.get('intent')}")
+        return result.get("final_output") or {"error": "No output generated"}
 
     except Exception as e:
         logger.error(f"Error in /api/therapy: {e}", exc_info=True)
