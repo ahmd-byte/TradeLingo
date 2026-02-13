@@ -55,8 +55,8 @@ app = FastAPI(
     title="TradeLingo",
     version="2.0.0",
     description="AI-powered trading education with FastAPI & MongoDB",
-    docs_url="/api/docs",
-    openapi_url="/api/openapi.json",
+    docs_url="/docs",
+    openapi_url="/openapi.json",
     lifespan=lifespan
 )
 
