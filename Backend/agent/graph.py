@@ -33,14 +33,14 @@ def create_superbear_graph():
 
     # Add nodes to graph
     graph_builder.add_node("input", input_node)
-    graph_builder.add_node("intent", intent_node)
+    graph_builder.add_node("classify", intent_node)
     graph_builder.add_node("research", research_node)
     graph_builder.add_node("therapy", therapy_node)
     graph_builder.add_node("merge", merge_node)
 
-    # Add edges: Linear flow through input and intent
+    # Add edges: Linear flow through input and intent classification
     graph_builder.add_edge(START, "input")
-    graph_builder.add_edge("input", "intent")
+    graph_builder.add_edge("input", "classify")
 
     # Conditional routing based on detected intent
     def route_based_on_intent(state: AgentState):
@@ -53,7 +53,7 @@ def create_superbear_graph():
             return ["research", "therapy"]
 
     graph_builder.add_conditional_edges(
-        "intent",
+        "classify",
         route_based_on_intent,
         {"research": "research", "therapy": "therapy"},
     )
