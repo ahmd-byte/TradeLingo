@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down TradeLingo Backend...")
-    close_mongo_connection()
+    await close_mongo_connection()
 
 
 app = FastAPI(
@@ -345,26 +345,6 @@ async def therapy(
 
     except Exception as e:
         logger.error(f"Error in /api/therapy: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
-        
-        # Update memory
-        memory.increment_interaction()
-        if response.get("emotional_pattern"):
-            memory.add_mistake(
-                mistake_type=response["emotional_pattern"],
-                description=response.get("emotional_insight", ""),
-                context=request.message
-            )
-        if trade_data:
-            memory.add_trade_summary(trade_data, analysis=response.get("acknowledgment", ""))
-        
-        session_memory[request.session_id] = memory
-        
-        logger.info(f"Therapy request from user: {current_user.email}")
-        return response
-    
-    except Exception as e:
-        logger.error(f"Error in /api/therapy: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
