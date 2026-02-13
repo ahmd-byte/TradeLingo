@@ -1,206 +1,261 @@
 """
-Test Suite for the TutorAgent
-Allows testing the agent without Flask.
+Test Suite for the SuperBear LangGraph Agent
+Tests the new LangGraph-based unified AI architecture.
 """
 
+import asyncio
 import json
-from agent import run_agent
-from memory import LearningMemory
+import sys
+from datetime import datetime
+from agent.graph import create_superbear_graph
+from agent.state import AgentState
 
 
-def test_basic_profile():
-    """Test agent with just a user profile."""
+async def test_graph_initialization():
+    """Test 1: Graph initialization and structure."""
     print("\n" + "="*60)
-    print("TEST 1: Basic Profile Input")
+    print("TEST 1: Graph Initialization")
     print("="*60)
     
-    profile = {
-        "name": "Alice",
-        "tradingLevel": "beginner",
-        "learningStyle": "visual",
-        "riskTolerance": "conservative",
-        "preferredMarkets": "stocks",
-        "tradingFrequency": "weekly"
-    }
-    
-    input_data = {
-        "user_profile": profile,
-        "trade_data": None,
-        "user_question": "I want to understand the basics of trading"
-    }
-    
     try:
-        response, memory = run_agent(input_data)
+        graph = create_superbear_graph()
+        print("✓ Graph created successfully")
+        print(f"  Graph type: {type(graph)}")
         
-        print("\n✓ Agent Response:")
-        print(json.dumps(response, indent=2))
-        
-        print("\n✓ Memory State:")
-        print(json.dumps(memory.serialize(), indent=2))
-        
+        # Check if graph has the required methods
+        if hasattr(graph, 'ainvoke'):
+            print("✓ Graph has ainvoke method")
+        else:
+            print("✗ Graph missing ainvoke method")
+            return False
+            
         return True
     except Exception as e:
-        print(f"\n✗ Error: {e}")
+        print(f"✗ Error during graph initialization: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
-def test_with_trade_data():
-    """Test agent with trade data."""
+async def test_state_creation():
+    """Test 2: AgentState creation with sample data."""
     print("\n" + "="*60)
-    print("TEST 2: With Trade Data")
+    print("TEST 2: State Creation")
     print("="*60)
     
-    profile = {
-        "name": "Bob",
-        "tradingLevel": "intermediate",
-        "learningStyle": "analytical",
-        "riskTolerance": "moderate",
-        "preferredMarkets": "forex",
-        "tradingFrequency": "daily"
-    }
-    
-    trade_data = {
-        "date": "2024-02-07",
-        "stockCode": "EURUSD",
-        "stockName": "EUR/USD",
-        "action": "buy",
-        "units": 10000,
-        "price": 1.0850,
-        "intraday": "yes"
-    }
-    
-    input_data = {
-        "user_profile": profile,
-        "trade_data": trade_data,
-        "user_question": None
-    }
-    
     try:
-        response, memory = run_agent(input_data)
+        state = AgentState(
+            user_message="What is position sizing?",
+            user_id="test_user_123",
+            session_id="session_456",
+            timestamp=datetime.now().isoformat(),
+            user_profile={
+                "name": "Alice",
+                "tradingLevel": "beginner",
+                "learningStyle": "visual",
+                "riskTolerance": "conservative"
+            },
+            memory_doc=None
+        )
         
-        print("\n✓ Agent Response:")
-        print(json.dumps(response, indent=2))
-        
-        print("\n✓ Concepts Taught:")
-        for concept in memory.get_concepts_taught():
-            print(f"  - {concept.get('concept')}")
+        print("✓ AgentState created successfully")
+        print(f"  User message: {state.user_message}")
+        print(f"  User ID: {state.user_id}")
+        print(f"  Session ID: {state.session_id}")
         
         return True
     except Exception as e:
-        print(f"\n✗ Error: {e}")
+        print(f"✗ Error during state creation: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
-def test_memory_persistence():
-    """Test that memory persists across interactions."""
+async def test_research_intent():
+    """Test 3: Research intent detection and processing."""
     print("\n" + "="*60)
-    print("TEST 3: Memory Persistence Across Interactions")
+    print("TEST 3: Research Intent Flow")
     print("="*60)
     
-    profile = {
-        "name": "Charlie",
-        "tradingLevel": "advanced",
-        "learningStyle": "kinesthetic",
-        "riskTolerance": "aggressive",
-        "preferredMarkets": "crypto",
-        "tradingFrequency": "very frequently"
-    }
-    
-    # First interaction
-    print("\n--- Interaction 1 ---")
-    input_data_1 = {
-        "user_profile": profile,
-        "trade_data": None,
-        "user_question": "How do I manage position size?"
-    }
-    
     try:
-        response_1, memory_1 = run_agent(input_data_1)
-        concept_1 = response_1.get("learning_concept")
-        print(f"✓ Taught: {concept_1}")
+        graph = create_superbear_graph()
         
-        # Second interaction with persisted memory
-        print("\n--- Interaction 2 (With Persisted Memory) ---")
-        input_data_2 = {
-            "user_profile": profile,
-            "trade_data": None,
-            "user_question": "What else should I know?"
-        }
+        state = AgentState(
+            user_message="How do I calculate the Sharpe ratio for my portfolio?",
+            user_id="test_user_123",
+            session_id="session_456",
+            timestamp=datetime.now().isoformat(),
+            user_profile={
+                "name": "Alice",
+                "tradingLevel": "intermediate",
+                "learningStyle": "analytical",
+                "riskTolerance": "moderate"
+            },
+            memory_doc={"concepts_taught": [], "emotional_patterns": []}
+        )
         
-        response_2, memory_2 = run_agent(input_data_2, memory=memory_1)
-        concept_2 = response_2.get("learning_concept")
-        print(f"✓ Taught: {concept_2}")
+        print("✓ Executing research intent flow...")
+        result = await graph.ainvoke(state)
         
-        print(f"\n✓ Total concepts taught: {len(memory_2.get_concepts_taught())}")
-        print("✓ Concepts taught:")
-        for concept in memory_2.get_concepts_taught():
-            print(f"  - {concept.get('concept')}")
+        print(f"  Intent detected: {result.intent}")
+        print(f"  Confidence: {result.confidence}")
+        
+        if result.research_output:
+            print("✓ Research output generated")
+            print(f"  Keys in output: {list(result.research_output.keys())}")
+        
+        if result.final_output:
+            print("✓ Final output generated")
+            output_str = json.dumps(result.final_output, indent=2)[:200] + "..."
+            print(f"  Output preview: {output_str}")
         
         return True
     except Exception as e:
-        print(f"\n✗ Error: {e}")
+        print(f"✗ Error during research flow: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
-def test_error_handling():
-    """Test error handling with malformed data."""
+async def test_therapy_intent():
+    """Test 4: Therapy intent detection and processing."""
     print("\n" + "="*60)
-    print("TEST 4: Error Handling")
+    print("TEST 4: Therapy Intent Flow")
     print("="*60)
     
-    # Missing required profile fields
-    profile = {
-        "name": "Test User"
-        # Missing other required fields
-    }
-    
-    input_data = {
-        "user_profile": profile,
-        "trade_data": None,
-        "user_question": "Test error handling"
-    }
-    
     try:
-        response, memory = run_agent(input_data)
-        print("\n✓ Agent handled incomplete profile gracefully")
-        print(f"Response keys: {list(response.keys())}")
+        graph = create_superbear_graph()
+        
+        state = AgentState(
+            user_message="I'm struggling with panic selling. Every small dip makes me want to exit my positions.",
+            user_id="test_user_123",
+            session_id="session_456",
+            timestamp=datetime.now().isoformat(),
+            user_profile={
+                "name": "Bob",
+                "tradingLevel": "intermediate",
+                "learningStyle": "reflective",
+                "riskTolerance": "low"
+            },
+            memory_doc={"concepts_taught": [], "emotional_patterns": []}
+        )
+        
+        print("✓ Executing therapy intent flow...")
+        result = await graph.ainvoke(state)
+        
+        print(f"  Intent detected: {result.intent}")
+        print(f"  Emotional state: {result.emotional_state}")
+        print(f"  Confidence: {result.confidence}")
+        
+        if result.therapy_output:
+            print("✓ Therapy output generated")
+            print(f"  Keys in output: {list(result.therapy_output.keys())}")
+        
+        if result.final_output:
+            print("✓ Final output generated")
+        
         return True
     except Exception as e:
-        print(f"\n⚠ Expected error: {e}")
-        return True  # This is expected
+        print(f"✗ Error during therapy flow: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
 
 
-def run_all_tests():
-    """Run all tests."""
+async def test_combined_intent():
+    """Test 5: Combined research + therapy intent."""
+    print("\n" + "="*60)
+    print("TEST 5: Combined Intent Flow (Research + Therapy)")
+    print("="*60)
+    
+    try:
+        graph = create_superbear_graph()
+        
+        state = AgentState(
+            user_message="I'm nervous about making my first options trade but want to understand the mechanics better.",
+            user_id="test_user_123",
+            session_id="session_456",
+            timestamp=datetime.now().isoformat(),
+            user_profile={
+                "name": "Charlie",
+                "tradingLevel": "beginner",
+                "learningStyle": "analytical",
+                "riskTolerance": "conservative"
+            },
+            memory_doc={"concepts_taught": [], "emotional_patterns": []}
+        )
+        
+        print("✓ Executing combined intent flow...")
+        result = await graph.ainvoke(state)
+        
+        print(f"  Intent detected: {result.intent}")
+        print(f"  Emotional state: {result.emotional_state}")
+        print(f"  Confidence: {result.confidence}")
+        
+        if result.research_output:
+            print("✓ Research component generated")
+            
+        if result.therapy_output:
+            print("✓ Therapy component generated")
+        
+        if result.final_output:
+            print("✓ Merged output generated successfully")
+        
+        return True
+    except Exception as e:
+        print(f"✗ Error during combined flow: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+
+async def run_all_tests():
+    """Run all tests asynchronously."""
     print("\n" + "="*70)
-    print("TUTOR AGENT TEST SUITE")
+    print("SUPERBEAR LANGGRAPH TEST SUITE")
     print("="*70)
     
     results = []
     
+    # Test 1: Initialization
     try:
-        results.append(("Basic Profile", test_basic_profile()))
+        passed = await test_graph_initialization()
+        results.append(("Graph Initialization", passed))
     except Exception as e:
         print(f"Test failed to run: {e}")
-        results.append(("Basic Profile", False))
+        results.append(("Graph Initialization", False))
     
+    # Test 2: State Creation
     try:
-        results.append(("Trade Data", test_with_trade_data()))
+        passed = await test_state_creation()
+        results.append(("State Creation", passed))
     except Exception as e:
         print(f"Test failed to run: {e}")
-        results.append(("Trade Data", False))
+        results.append(("State Creation", False))
     
+    # Test 3: Research Intent
     try:
-        results.append(("Memory Persistence", test_memory_persistence()))
+        passed = await test_research_intent()
+        results.append(("Research Intent Flow", passed))
     except Exception as e:
         print(f"Test failed to run: {e}")
-        results.append(("Memory Persistence", False))
+        results.append(("Research Intent Flow", False))
     
+    # Test 4: Therapy Intent
     try:
-        results.append(("Error Handling", test_error_handling()))
+        passed = await test_therapy_intent()
+        results.append(("Therapy Intent Flow", passed))
     except Exception as e:
         print(f"Test failed to run: {e}")
-        results.append(("Error Handling", False))
+        results.append(("Therapy Intent Flow", False))
+    
+    # Test 5: Combined Intent
+    try:
+        passed = await test_combined_intent()
+        results.append(("Combined Intent Flow", passed))
+    except Exception as e:
+        print(f"Test failed to run: {e}")
+        results.append(("Combined Intent Flow", False))
     
     # Summary
     print("\n" + "="*70)
@@ -216,7 +271,10 @@ def run_all_tests():
     
     print(f"\nTotal: {passed_count}/{total_count} tests passed")
     print("="*70)
+    
+    return all(p for _, p in results)
 
 
 if __name__ == "__main__":
-    run_all_tests()
+    success = asyncio.run(run_all_tests())
+    sys.exit(0 if success else 1)

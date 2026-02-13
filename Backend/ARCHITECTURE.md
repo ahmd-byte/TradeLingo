@@ -1,343 +1,1085 @@
-"""
-ARCHITECTURE DOCUMENTATION
-TradeLingo AI Trading Tutor Agent System
-========================================
+# AI ARCHITECTURE DOCUMENTATION
+## TradeLingo SuperBear AI Agent System — LangGraph Edition
 
-## Overview
-This is a modular, single AI agent system designed to be an educational tutor
-for trading concepts. It follows a structured decision loop:
+### Overview
 
-    OBSERVE → ANALYZE → DECIDE → TEACH
+**Purpose**: Unified AI mentor for trading education and emotional wellness using agentic workflows
 
-## Directory Structure
+**Architecture**: Graph-based workflow using LangGraph for dynamic routing
+
+**Core Concept**: User input → Intent Detection → Conditional Routing → Parallel Processing → Merged Response
+
+**SuperBear Capabilities**:
+- 📚 **Research Node**: Structured trading concepts & market education
+- 🐻 **Therapy Node**: Trading psychology & emotional resilience coaching
+- 🧠 **Memory System**: Tracks learning journey & emotional patterns
+- 🎓 **Intelligent Routing**: Automatically detects user needs and routes to appropriate node
+- 🔄 **Dynamic Merging**: Combines insights from both nodes when needed
+
+**LLM**: Google Gemini 2.5 Flash Lite for reasoning and response generation
+
+**Framework**: LangGraph for agentic state machines and conditional routing
+
+---
+
+## Module Structure
 
 ```
 Backend/
-├── agent/                    # Agent logic
+├── agent/                        # SuperBear LangGraph Agent
 │   ├── __init__.py
-│   └── tutor_agent.py       # Main TutorAgent class
+│   ├── graph.py                 # SuperBear graph definition & execution
+│   ├── nodes/                   # Graph nodes
+│   │   ├── __init__.py
+│   │   ├── input_node.py        # Entry point: parse user input
+│   │   ├── intent_node.py       # Detect: therapy vs research vs both
+│   │   ├── research_node.py     # Educational: trading concepts
+│   │   ├── therapy_node.py      # Wellness: psychology coaching
+│   │   └── merge_node.py        # Combine outputs from parallel nodes
+│   └── state.py                 # AgentState definition
 │
-├── memory/                   # Session memory management
+├── memory/                       # Learning memory management
 │   ├── __init__.py
-│   └── learning_memory.py   # LearningMemory class
+│   └── learning_memory.py       # LearningMemory: tracks teaching & emotional patterns
 │
-├── prompts/                  # Prompt building utilities
+├── prompts/                      # Prompt engineering
 │   ├── __init__.py
-│   └── tutor_prompt.py      # Prompt templates and builders
+│   ├── intent_prompt.py         # Intent classification prompts
+│   ├── research_prompt.py       # Educational content generation
+│   └── therapy_prompt.py        # Wellness coaching prompts
 │
-├── services/                 # External service integrations
+├── services/                     # LLM integration
 │   ├── __init__.py
-│   └── llm_service.py       # Gemini API wrapper
+│   └── llm_service.py           # Gemini API wrapper with JSON parsing
 │
-├── flask-app.py             # Main Flask application
-├── requirements.txt          # Python dependencies
-└── README.md                # This file
+└── test_agent.py                # Unit tests for SuperBear graph
 ```
 
-## Module Details
+---
 
-### 1. agent/tutor_agent.py
-The core agent implementing the educational loop.
+## SuperBear Graph Architecture
 
-**Main Class: TutorAgent**
-- `run_agent(user_profile, trade_data, user_question)`: Main entry point
-- `observe()`: Gathers current situation
-- `analyze()`: Identifies patterns and gaps
-- `teach()`: Generates structured lesson via LLM
+### Graph Workflow
 
-**Key Features:**
-- Maintains LearningMemory across sessions
-- Tracks concepts taught and mistakes observed
-- Generates deterministic, explainable output via structured prompts
+```
+User Input
+    ↓
+┌───────────────────┐
+│  INPUT NODE       │ - Parse user message
+│  - Parse message  │ - Extract metadata
+│  - Validate input │
+└────────┬──────────┘
+         ↓
+┌───────────────────────────┐
+│  INTENT NODE              │ - Classify intent
+│  - Run LLM classification │ - Analyze emotional state
+│  - Determine routing      │
+└────────┬──────────────────┘
+         ↓
+    ┌────────────────────────────────┐
+    │  CONDITIONAL EDGE              │
+    │  Routes to: therapy / research │
+    └─────┬──────────────────┬────────┘
+          │                  │
+    ┌─────▼────┐      ┌──────▼──────┐
+    │ THERAPY   │      │ RESEARCH    │
+    │ NODE      │      │ NODE        │
+    │           │      │             │
+    │ - Validate│      │ - Analyze   │
+    │   emotion │      │   trade/Q   │
+    │ - Empath. │      │ - Generate  │
+    │   respond │      │   concepts  │
+    │ - Coach   │      │ - Educate   │
+    └─────┬─────┘      └──────┬──────┘
+          │                  │
+          └──────┬───────────┘
+                 ↓
+        ┌────────────────────┐
+        │  MERGE NODE        │
+        │  - Combine outputs │
+        │  - Prioritize      │
+        │  - Format response │
+        └────────┬───────────┘
+                 ↓
+        ┌────────────────────┐
+        │  FINAL OUTPUT      │
+        │  - Return JSON     │
+        │  - Update memory   │
+        └────────────────────┘
+```
 
-**Output JSON:**
+---
+
+## Graph Nodes
+
+### 1. agent/state.py
+
+**AgentState** - Shared state across all nodes
+
+```python
+from typing import Optional, List, Dict, Literal, Any
+from pydantic import BaseModel
+
+class AgentState(BaseModel):
+    """
+    Shared state passed between nodes in the SuperBear graph.
+    """
+    # Input
+    user_message: str
+    user_id: str
+    user_profile: Dict[str, Any]
+    
+    # Intent detection
+    intent: Literal["research", "therapy", "both"]
+    confidence: float
+    emotional_state: Optional[str]  # "calm", "anxious", "frustrated", etc.
+    
+    # Research node output
+    research_output: Optional[Dict[str, Any]] = None
+    research_complete: bool = False
+    
+    # Therapy node output
+    therapy_output: Optional[Dict[str, Any]] = None
+    therapy_complete: bool = False
+    
+    # Memory
+    memory_doc: Optional[Dict] = None
+    
+    # Final merged output
+    final_output: Optional[Dict[str, Any]] = None
+    
+    # Metadata
+    timestamp: str
+    session_id: str
+```
+
+---
+
+### 2. agent/nodes/input_node.py
+
+**Purpose**: Entry point - parse and validate user input
+
+```python
+async def input_node(state: AgentState) -> AgentState:
+    """
+    Parse user input and extract metadata.
+    
+    Returns:
+        Updated state ready for intent detection
+    """
+    # Validate message
+    if not state.user_message or len(state.user_message) < 5:
+        raise ValueError("Message too short")
+    
+    # Extract metadata
+    # - Detect if includes trade data
+    # - Identify emotional keywords
+    # - Check for market context
+    
+    return state
+```
+
+---
+
+### 3. agent/nodes/intent_node.py
+
+**Purpose**: Classify user intent - therapy vs research vs both
+
+```python
+async def intent_node(state: AgentState) -> AgentState:
+    """
+    Detect user's primary intent and emotional state using LLM.
+    
+    Routes to:
+    - 'therapy': Emotional support needed
+    - 'research': Educational content needed
+    - 'both': Both are needed
+    """
+    
+    intent_prompt = build_intent_prompt(state.user_message, state.memory_doc)
+    
+    response = await llm.call_gemini_json(intent_prompt)
+    
+    state.intent = response["intent"]
+    state.confidence = response["confidence"]
+    state.emotional_state = response.get("emotional_state")
+    
+    return state
+```
+
+**Intent Classification Output**:
 ```json
 {
-  "observation": "What was observed",
-  "analysis": "Pattern analysis",
-  "learning_concept": "Concept name",
-  "why_it_matters": "Why this concept matters",
-  "teaching_explanation": "2-3 paragraph teaching",
-  "teaching_example": "Practical example",
-  "actionable_takeaway": "One concrete action to take",
-  "next_learning_suggestion": "What to learn next"
+  "intent": "therapy",
+  "confidence": 0.85,
+  "emotional_state": "anxiety",
+  "reasoning": "User mentions 'panic selling' and '5% drop scared me'"
 }
 ```
+
+---
+
+### 4. agent/nodes/research_node.py
+
+**Purpose**: Generate educational content on trading topics
+
+```python
+async def research_node(state: AgentState) -> AgentState:
+    """
+    Research/Educational mode: Teach trading concepts.
+    
+    OBSERVE → ANALYZE → DECIDE → TEACH
+    """
+    
+    # Only run if intent is "research" or "both"
+    if state.intent not in ["research", "both"]:
+        state.research_complete = True
+        return state
+    
+    # Load memory for context
+    concepts_taught = state.memory_doc.get("concepts_taught", [])
+    
+    # Build educational prompt
+    research_prompt = build_research_prompt(
+        user_message=state.user_message,
+        user_profile=state.user_profile,
+        memory=concepts_taught
+    )
+    
+    # Get educational response from LLM
+    response = await llm.call_gemini_json(research_prompt)
+    
+    state.research_output = {
+        "observation": response.get("observation"),
+        "analysis": response.get("analysis"),
+        "learning_concept": response.get("learning_concept"),
+        "why_it_matters": response.get("why_it_matters"),
+        "teaching_explanation": response.get("teaching_explanation"),
+        "teaching_example": response.get("teaching_example"),
+        "actionable_takeaway": response.get("actionable_takeaway"),
+        "next_learning_suggestion": response.get("next_learning_suggestion")
+    }
+    
+    state.research_complete = True
+    
+    return state
+```
+
+---
+
+### 5. agent/nodes/therapy_node.py
+
+**Purpose**: Generate emotional wellness & psychology coaching
+
+```python
+async def therapy_node(state: AgentState) -> AgentState:
+    """
+    Wellness/Therapy mode: Coach emotional resilience.
+    
+    VALIDATE → ANALYZE → COACH → EMPOWER
+    """
+    
+    # Only run if intent is "therapy" or "both"
+    if state.intent not in ["therapy", "both"]:
+        state.therapy_complete = True
+        return state
+    
+    # Load emotional patterns from memory
+    emotional_patterns = state.memory_doc.get("emotional_patterns", [])
+    
+    # Build therapy prompt
+    therapy_prompt = build_therapy_prompt(
+        user_message=state.user_message,
+        emotional_state=state.emotional_state,
+        emotional_patterns=emotional_patterns,
+        user_profile=state.user_profile
+    )
+    
+    # Get wellness response from LLM
+    response = await llm.call_gemini_json(therapy_prompt)
+    
+    state.therapy_output = {
+        "emotional_state": response.get("emotional_state"),
+        "validation": response.get("validation"),
+        "perspective": response.get("perspective"),
+        "coping_strategy": response.get("coping_strategy"),
+        "educational_focus": response.get("educational_focus"),
+        "actionable_steps": response.get("actionable_steps"),
+        "encouragement": response.get("encouragement")
+    }
+    
+    state.therapy_complete = True
+    
+    return state
+```
+
+---
+
+### 6. agent/nodes/merge_node.py
+
+**Purpose**: Combine outputs from parallel research and therapy nodes
+
+```python
+async def merge_node(state: AgentState) -> AgentState:
+    """
+    Merge research and therapy outputs based on intent.
+    
+    Priority:
+    - intent="therapy" → therapy first, research as context
+    - intent="research" → research first, therapy as support
+    - intent="both" → balanced combination
+    """
+    
+    if state.intent == "research":
+        # Research-focused
+        state.final_output = {
+            "type": "educational",
+            **state.research_output,
+            "wellness_support": state.therapy_output.get("coping_strategy") if state.therapy_output else None
+        }
+    
+    elif state.intent == "therapy":
+        # Therapy-focused
+        state.final_output = {
+            "type": "wellness",
+            **state.therapy_output,
+            "educational_focus": state.therapy_output.get("educational_focus"),
+            "related_concept": state.research_output.get("learning_concept") if state.research_output else None
+        }
+    
+    else:  # "both"
+        # Balanced
+        state.final_output = {
+            "type": "integrated",
+            "primary_mode": "therapy" if state.emotional_state else "research",
+            "therapy": state.therapy_output,
+            "research": state.research_output
+        }
+    
+    return state
+```
+
+---
+
+## Conditional Routing
+
+### agent/graph.py - Edge Routing Logic
+
+```python
+from langgraph.graph import StateGraph, START, END
+from langgraph.types import Send
+
+def create_superbear_graph():
+    """
+    Build the SuperBear LangGraph workflow.
+    """
+    
+    graph_builder = StateGraph(AgentState)
+    
+    # Add nodes
+    graph_builder.add_node("input", input_node)
+    graph_builder.add_node("intent", intent_node)
+    graph_builder.add_node("research", research_node)
+    graph_builder.add_node("therapy", therapy_node)
+    graph_builder.add_node("merge", merge_node)
+    
+    # Add edges
+    graph_builder.add_edge(START, "input")
+    graph_builder.add_edge("input", "intent")
+    
+    # Conditional routing based on intent
+    def route_based_on_intent(state: AgentState):
+        """Route to research, therapy, or both based on detected intent"""
+        if state.intent == "research":
+            return ["research"]
+        elif state.intent == "therapy":
+            return ["therapy"]
+        else:  # "both"
+            return ["research", "therapy"]
+    
+    graph_builder.add_conditional_edges(
+        "intent",
+        route_based_on_intent,
+        {"research": "research", "therapy": "therapy"}
+    )
+    
+    # Converge back to merge
+    graph_builder.add_edge("research", "merge")
+    graph_builder.add_edge("therapy", "merge")
+    
+    # Final output
+    graph_builder.add_edge("merge", END)
+    
+    return graph_builder.compile()
+
+# Create singleton graph
+superbear_graph = create_superbear_graph()
+```
+
+---
+
+## Data Flow with LangGraph
+
+```
+START
+  ↓
+INPUT_NODE
+  • Parse user message
+  • Extract metadata
+  ↓
+INTENT_NODE
+  • Classify: research/therapy/both
+  • Detect emotional state
+  ↓
+CONDITIONAL_ROUTING
+  ├─ If research → RESEARCH_NODE (parallel)
+  ├─ If therapy → THERAPY_NODE (parallel)
+  └─ If both → both nodes (parallel execution)
+  ↓
+RESEARCH_NODE (if needed)
+  • OBSERVE: Analyze trade/question context
+  • ANALYZE: Identify knowledge gaps
+  • DECIDE: Choose concept
+  • TEACH: Generate lesson
+  ↓
+THERAPY_NODE (if needed)
+  • VALIDATE: Acknowledge emotion
+  • ANALYZE: Understand triggers
+  • COACH: Provide guidance
+  • EMPOWER: Action steps
+  ↓
+MERGE_NODE
+  • Combine outputs
+  • Prioritize based on intent
+  • Format final response
+  ↓
+END → Return to Frontend
+```
+
+---
 
 ### 2. memory/learning_memory.py
-Manages lightweight session memory.
 
-**Main Class: LearningMemory**
-- `add_concept()`: Record taught concepts
-- `add_mistake()`: Record observed mistakes
-- `add_trade_summary()`: Record trade data
-- `serialize()`: Convert to JSON
-- `deserialize()`: Restore from JSON
+**Main Class**: `LearningMemory`
 
-**Tracked Data:**
-- Concepts taught (with timestamps)
-- Observed mistakes and knowledge gaps
-- Recent trade summaries
-- Learning focus areas
-- User feedback
+Tracks the user's learning journey across sessions to enable personalization and prevent repetition.
 
-**Usage:**
+```python
+class LearningMemory:
+    """
+    Lightweight, stateless memory system for tracking learning progress.
+    Serializes to/from JSON for MongoDB storage.
+    """
+```
+
+**Tracked Data**:
+
+| Data | Purpose | Example |
+|------|---------|---------|
+| **Concepts Taught** | Avoid repetition, build on prior lessons | `[{concept: "Position Sizing", timestamp: "..."}, ...]` |
+| **Observed Mistakes** | Identify knowledge gaps & patterns | `[{type: "overleveraging", context: "...", timestamp: "..."}, ...]` |
+| **Trade Summaries** | Provide context-aware teaching | `[{symbol: "AAPL", action: "buy", reason: "...", timestamp: "..."}, ...]` |
+| **Learning Focus** | Prioritize topics based on need | `[{area: "Risk Management", priority: 3}, ...]` |
+| **Interaction Count** | Adapt complexity over sessions | `45` (total interactions) |
+| **Emotional Patterns** | Recognize psychological blocks | `[{emotion: "anxiety", trigger: "volatility", frequency: 3}, ...]` |
+
+**Key Methods**:
+
 ```python
 memory = LearningMemory()
-memory.add_concept("Position Sizing", "Managing risk exposure")
-memory.add_mistake("overleveraging", "Traded beyond account risk limit")
-```
 
-### 3. prompts/tutor_prompt.py
-Builds prompts for the agent's decision loop.
+# Track teaching
+memory.add_concept("Diversification", "Spreading risk across assets")
 
-**Key Functions:**
-- `build_tutor_prompt()`: Main prompt that guides OADT loop
-- `build_observation_context()`: Structure current situation
-- `build_analysis_context()`: Include history and focus areas
-- `build_memory_summary()`: Summarize what's been taught
+# Track mistakes
+memory.record_mistake("panic_selling", "Sold entire position due to 5% drop")
 
-**Prompt Strategy:**
-- Emphasizes educational focus (NOT trading signals)
-- Includes user profile for personalization
-- References memory to avoid repetition
-- Forces JSON output for deterministic processing
-
-### 4. services/llm_service.py
-Wrapper around Gemini API.
-
-**Main Class: LLMService**
-- `call_gemini_json()`: Get JSON-structured response
-- `call_gemini_text()`: Get plain text response
-
-**Features:**
-- Automatic markdown cleanup
-- JSON parsing with error handling
-- Consistent error messages
-- Configurable model and API key
-
-**Example:**
-```python
-llm = LLMService()
-response = llm.call_gemini_json(prompt)
-# Returns dict with parsed JSON
-```
-
-### 5. flask-app.py
-Flask web application integrating the agent.
-
-**Routes:**
-- `GET /`: Show form
-- `POST /`: Process form, run agent, return education
-
-**Key Functions:**
-- `create_profile()`: Save profile to Sheety
-- `post_trade()`: Save trade to Sheety
-- `run_tutor_agent()`: Execute agent with session memory
-- `format_agent_response_for_html()`: Convert JSON to HTML
-
-**Workflow:**
-1. Receive form submission
-2. Create/update user profile via Sheety
-3. Record trade data (optional) via Sheety
-4. Retrieve user's session memory
-5. Run TutorAgent with context
-6. Format response for frontend
-7. Render template with structured content
-
-## Data Flow
-
-```
-Frontend Form
-    ↓
-Flask Route (POST)
-    ↓
-Create Profile (Sheety)
-    ↓
-Record Trade (Sheety)
-    ↓
-Get Session Memory
-    ↓
-TutorAgent.run_agent()
-    ├─ observe()
-    ├─ analyze()
-    └─ teach() → LLMService.call_gemini_json()
-    ↓
-Update Memory with Taught Concept
-    ↓
-Format for HTML
-    ↓
-Render Template
-    ↓
-Frontend Display
-```
-
-## Memory Management
-
-**Session Memory Structure (Dict):**
-```python
-{
-    "session_start": "2024-01-01T12:00:00",
-    "concepts_taught": [
-        {"concept": "Name", "explanation": "...", "timestamp": "..."},
-        ...
-    ],
-    "observed_mistakes": [
-        {"type": "Type", "description": "...", "context": "...", "timestamp": "..."},
-        ...
-    ],
-    "recent_trade_summaries": [
-        {"trade": {...}, "analysis": "...", "timestamp": "..."},
-        ...
-    ],
-    "learning_focus_areas": [
-        {"area": "Area", "priority": 3},
-        ...
-    ],
-    "interaction_count": 5,
-    "user_feedback": [
-        {"feedback": "...", "type": "...", "timestamp": "..."},
-        ...
-    ]
-}
-```
-
-**In Production:**
-- Use Redis for session storage
-- Use PostgreSQL for historical data
-- Implement user authentication
-- Add memory persistence/reload on app restart
-
-## Agent Behavior Rules
-
-1. **EDUCATIONAL FOCUS ONLY**
-   - Never give buy/sell signals
-   - Never recommend specific securities
-   - Focus on reasoning quality and concepts
-
-2. **STRUCTURED REASONING**
-   - Always follow OADT loop
-   - Provide explanations (not just answers)
-   - Connect to user's learning level and style
-
-3. **MEMORY-AWARE**
-   - Reference what's been taught
-   - Avoid repeating concepts
-   - Build on previous lessons
-
-4. **PERSONALIZATION**
-   - Match learning style (visual, kinesthetic, auditory)
-   - Respect trading level (beginner, intermediate, advanced)
-   - Address stated risk tolerance
-
-## Testing the Agent
-
-### Test 1: Simple Profile Input
-```python
-from agent import run_agent
-from memory import LearningMemory
-
-profile = {
-    "name": "Alice",
-    "tradingLevel": "beginner",
-    "learningStyle": "visual",
-    "riskTolerance": "low",
-    "preferredMarkets": "stocks",
-    "tradingFrequency": "weekly"
-}
-
-response, memory = run_agent(
-    {"user_profile": profile},
-    memory=None
-)
-
-print(response)
-```
-
-### Test 2: With Trade Data
-```python
-trade_data = {
-    "date": "2024-01-01",
-    "stockCode": "AAPL",
+# Track trades
+memory.add_trade_summary({
+    "symbol": "AAPL",
     "action": "buy",
     "units": 10,
-    "price": 150,
+    "reasoning": "uptrend signal",
+    "emotion_state": "confident"
+})
+
+# Get summary for context
+summary = memory.get_teaching_context()
+
+# Serialize for storage
+json_data = memory.serialize()
+
+# Restore from storage
+memory = LearningMemory.deserialize(json_data)
+```
+
+**Memory Structure (MongoDB Document)**:
+
+```json
+{
+  "_id": "ObjectId",
+  "user_id": "ObjectId",
+  "session_start": "2025-02-13T10:00:00Z",
+  "concepts_taught": [
+    {
+      "concept": "Position Sizing",
+      "explanation": "Managing position size relative to account risk",
+      "timestamp": "2025-02-13T10:05:00Z"
+    }
+  ],
+  "observed_mistakes": [
+    {
+      "type": "overleveraging",
+      "description": "Traded 5x account size",
+      "context": "Market euphoria",
+      "timestamp": "2025-02-13T09:50:00Z"
+    }
+  ],
+  "recent_trades": [
+    {
+      "symbol": "AAPL",
+      "action": "buy",
+      "units": 10,
+      "price": 150.25,
+      "emotion_before": "confident",
+      "emotion_after": "anxious",
+      "timestamp": "2025-02-13T10:15:00Z"
+    }
+  ],
+  "learning_focus_areas": [
+    {
+      "area": "Risk Management",
+      "priority": 3,
+      "reason": "Overleveraging pattern detected"
+    }
+  ],
+  "interaction_count": 12,
+  "emotional_patterns": [
+    {
+      "emotion": "anxiety",
+      "trigger": "Market volatility > 3%",
+      "frequency": 5,
+      "coping_strength": "medium"
+    }
+  ]
+}
+```
+
+---
+
+### 3. prompts/tutor_prompt.py
+
+**Purpose**: Constructs structured prompts for SuperBear's educational mode.
+
+**Key Functions**:
+
+```python
+def build_tutor_prompt(user_profile, trade_data, memory, user_question):
+    """
+    Main prompt that instructs the agent on:
+    - What to OBSERVE (user situation)
+    - What to ANALYZE (knowledge gaps)
+    - How to DECIDE (teaching strategy)
+    - How to TEACH (lesson structure)
+    """
+
+def build_observation_context(user_profile, trade_data):
+    """Summarize the current teaching situation"""
+    return {
+        "trading_level": "beginner",  # or intermediate, advanced
+        "learning_style": "visual",   # or kinesthetic, auditory
+        "recent_emotion": "anxiety",
+        "market_context": "volatile",
+        "trade_context": {...}
+    }
+
+def build_analysis_context(memory):
+    """What has this user learned already?"""
+    return {
+        "concepts_taught": [...],
+        "gaps_identified": [...],
+        "emotional_blocks": [...]
+    }
+
+def build_memory_summary(memory):
+    """Create concise summary to prevent repetition"""
+    return f"""
+    This user has learned: {concepts_list}
+    Observed mistakes: {mistakes_list}
+    Current focus areas: {focus_areas}
+    """
+```
+
+---
+
+### 4. prompts/therapy_prompt.py
+
+**Purpose**: Constructs structured prompts for SuperBear's wellness mode.
+
+**Focus Areas**:
+- Anxiety & fear management
+- Greed & overconfidence recognition  
+- Decision paralysis & indecision
+- Loss aversion alignment
+- Impulsive trading triggers
+
+**Prompt Strategy** (VACE Framework):
+1. **Validate** - Acknowledge the emotional state
+2. **Analyze** - Understand triggers & patterns
+3. **Coach** - Teach underlying trading concept
+4. **Empower** - Provide coping strategies & actionable steps
+
+---
+
+### 5. services/llm_service.py
+
+**Main Class**: `LLMService`
+
+Wrapper around Google Gemini 2.5 Flash Lite API with deterministic JSON output.
+
+```python
+class LLMService:
+    def call_gemini_json(self, prompt, output_schema=None):
+        """
+        Call Gemini with JSON output guarantee.
+        
+        Returns: dict (parsed JSON)
+        Raises: ValueError if JSON parsing fails
+        """
+    
+    def call_gemini_text(self, prompt):
+        """
+        Call Gemini for plain text output.
+        
+        Returns: str (cleaned text)
+        """
+```
+
+**Features**:
+- ✅ JSON output enforcement
+- ✅ Markdown cleanup
+- ✅ Error handling & retries
+- ✅ Token counting
+- ✅ Configurable model selection
+- ✅ Temperature control for determinism
+
+**Configuration**:
+```python
+model = "gemini-2.5-flash-lite"
+temperature = 0.3  # Low for deterministic output
+max_tokens = 2000
+```
+
+---
+
+## Dependencies & Requirements
+
+Add LangGraph to requirements.txt:
+
+```
+langgraph==0.1.8
+langchain-core==0.2.0
+langchain-google-genai==0.1.0
+```
+
+Installation:
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## Agent Behavior Principles
+
+### 1. **Educational Focus Only**
+- ✅ Teach concepts & reasoning
+- ✅ Explain why markets behave a certain way
+- ❌ NO buy/sell signals
+- ❌ NO specific stock recommendations
+
+### 2. **Structured Reasoning (OADT)**
+- Always follow the 4-step loop
+- Provide explanations (not just answers)
+- Show reasoning transparency
+
+### 3. **Memory-Aware Teaching**
+- Reference previously taught concepts
+- Build on prior lessons
+- Avoid repetition
+- Track emotional patterns
+
+### 4. **Personalized for Each User**
+- Adapt to trading level (beginner → advanced)
+- Match learning style (visual, kinesthetic, auditory)
+- Respect risk tolerance
+- Account for emotional state
+
+### 5. **Deterministic Output**
+- JSON structure ensures frontend consistency
+- Markdown formatting for readability
+- Structured fields prevent ambiguity
+
+---
+
+## Testing SuperBear Graph
+
+### Test 1: Research-Only Intent
+
+```python
+from agent.graph import superbear_graph
+from agent.state import AgentState
+
+state = AgentState(
+    user_message="What is position sizing and why is it important?",
+    user_id="user-123",
+    user_profile={"trading_level": "beginner"},
+    session_id="session-456",
+    timestamp="2025-02-13T10:30:00Z"
+)
+
+# Run graph
+result = await superbear_graph.ainvoke(state)
+
+print(result.final_output)
+# Output: research-focused educational response
+```
+
+### Test 2: Therapy-Only Intent
+
+```python
+state = AgentState(
+    user_message="I got scared and panic sold my entire portfolio when the market dropped 5%",
+    user_id="user-123",
+    user_profile={"trading_level": "beginner"},
+    session_id="session-456",
+    timestamp="2025-02-13T10:30:00Z"
+)
+
+result = await superbear_graph.ainvoke(state)
+
+print(result.final_output)
+# Output: therapy-focused wellness response
+```
+
+### Test 3: Both Intent (Parallel Execution)
+
+```python
+state = AgentState(
+    user_message="I'm anxious about my AAPL position. Should I hold or sell given the recent volatility?",
+    user_id="user-123",
+    user_profile={"trading_level": "beginner"},
+    session_id="session-456",
+    timestamp="2025-02-13T10:30:00Z"
+)
+
+result = await superbear_graph.ainvoke(state)
+
+print(result.final_output)
+# Output: integrated response with both therapy & research
+```
+
+---
+
+## Integration with FastAPI
+
+### SuperBear API Endpoint
+
+```
+POST /api/chat
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "message": "I'm anxious about my position. What should I do?",
+  "session_id": "user-session-123"
 }
 
-response, memory = run_agent(
-    {
-        "user_profile": profile,
-        "trade_data": trade_data
-    },
-    memory=None
-)
+Response: {...merged graph output...}
 ```
 
-## Configuration
+### FastAPI Handler Pattern
 
-**Environment Variables (.env):**
-```
-GEMINI_API_KEY=your_key_here
-PROFILES_SHEETY_ENDPOINT=https://api.sheety.co/...
-PAST_TRADES_SHEETY_ENDPOINT=https://api.sheety.co/...
-SHEETY_TOKEN=your_token_here
-```
-
-**Flask Configuration (flask-app.py):**
 ```python
-app.config['DEBUG'] = True  # Set to False in production
-app.config['TESTING'] = False
+from agent.graph import superbear_graph
+from agent.state import AgentState
+
+@app.post("/api/chat")
+async def chat(request: ChatRequest, user = Depends(get_current_active_user)):
+    # 1. Load user's memory from MongoDB
+    memory_doc = await db.memories.find_one({"user_id": user["_id"]})
+    
+    # 2. Create initial state
+    state = AgentState(
+        user_message=request.message,
+        user_id=str(user["_id"]),
+        user_profile=user,
+        memory_doc=memory_doc,
+        session_id=request.session_id,
+        timestamp=datetime.now().isoformat()
+    )
+    
+    # 3. Run SuperBear graph (automatic routing & merging)
+    result = await superbear_graph.ainvoke(state)
+    
+    # 4. Update memory with teaching/coaching
+    if result.research_output:
+        memory_doc["concepts_taught"].append({
+            "concept": result.research_output.get("learning_concept"),
+            "timestamp": result.timestamp
+        })
+    
+    if result.therapy_output:
+        memory_doc["emotional_patterns"].append({
+            "emotion": result.therapy_output.get("emotional_state"),
+            "timestamp": result.timestamp
+        })
+    
+    await db.memories.update_one(
+        {"user_id": user["_id"]},
+        {"$set": memory_doc},
+        upsert=True
+    )
+    
+    # 5. Return merged response
+    return result.final_output
 ```
 
-## Error Handling
+---
 
-The system handles errors at multiple levels:
+## LangGraph Benefits
 
-1. **LLM Service**: JSON parsing errors, API failures
-2. **Agent**: Missing profile data, API timeouts
-3. **Flask**: Form validation, Sheety integration errors
+### 1. **Automatic Parallelization**
+Both research and therapy nodes execute in parallel when intent="both"
+```
+research_node ──┐
+                ├─→ merge_node
+therapy_node ───┘
+```
 
-All errors are logged and returned to the user with context.
+### 2. **Conditional Routing**
+Intent detection automatically routes to the right nodes
+```
+intent="research" → [research_node]
+intent="therapy"  → [therapy_node]
+intent="both"     → [research_node, therapy_node]
+```
 
-## Future Improvements
+### 3. **State Management**
+Unified `AgentState` object flows through all nodes
+- Each node updates only relevant fields
+- Previous node outputs available to subsequent nodes
 
-1. **Persistent Memory**: Use database instead of in-memory dict
-2. **User Authentication**: Session-based user tracking
-3. **Multi-Turn Conversations**: Remember conversation history
-4. **Feedback Loop**: Let users rate lessons
-5. **Advanced Memory**: Use embeddings for semantic search
-6. **Caching**: Cache common concepts/explanations
-7. **Analytics**: Track which concepts are most helpful
-8. **Streaming**: Stream LLM responses for faster UX
-
-## Debugging
-
-**Enable verbose logging:**
+### 4. **Composability**
+Easy to add new nodes or fine-tune routing logic
 ```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
+# Add a new node
+graph_builder.add_node("analytics", analytics_node)
+
+# Update routing
+def route_advanced(state):
+    if state.confidence < 0.5:
+        return ["analytics"]
+    return route_based_on_intent(state)
 ```
 
-**Inspect agent output:**
+### 5. **Streaming & Monitoring**
+LangGraph provides built-in streaming and debugging
 ```python
-response, memory = run_agent(input_data)
-print(json.dumps(response, indent=2))
-print(json.dumps(memory.serialize(), indent=2))
+# Stream events
+async for event in superbear_graph.astream(state):
+    print(f"Node: {event['type']}, Data: {event['data']}")
+
+# Debug state at each node
+async for step in superbear_graph.astream(state, debug=True):
+    print(step)
 ```
 
-**Test LLM directly:**
+---
+
+## Configuration & Environment
+
+**Required Environment Variables**:
+```
+GEMINI_API_KEY=<your-gemini-api-key>
+MONGODB_URL=<mongodb-connection-string>
+DATABASE_NAME=tradelingo
+```
+
+**LangGraph Configuration** (in `agent/graph.py`):
 ```python
-from services import LLMService
-llm = LLMService()
-result = llm.call_gemini_json("Your test prompt")
+# Graph execution
+GRAPH_TIMEOUT = 30  # seconds
+PARALLEL_EXECUTION = True  # Enable parallel node execution
+
+# LLM settings
+MODEL = "gemini-2.5-flash-lite"
+temperature = 0.3  # Deterministic output
+max_tokens = 2000
 ```
 
-## Support & Questions
+**Node Configuration**:
+```python
+# Intent classification confidence threshold
+INTENT_CONFIDENCE_MIN = 0.6
 
-For issues or improvements, refer to:
-- Agent logic: `agent/tutor_agent.py`
-- Memory management: `memory/learning_memory.py`
-- LLM integration: `services/llm_service.py`
-- Prompt templates: `prompts/tutor_prompt.py`
-- Flask routes: `flask-app.py`
-"""
+# Parallel node timeout
+PARALLEL_TIMEOUT = 15  # seconds
+
+# Memory retrieval
+MEMORY_CONTEXT_LIMIT = 10  # last N concepts taught
+```
+
+---
+
+## Monitoring & Debugging
+
+### LangGraph Execution Tracing
+
+```python
+from agent.graph import superbear_graph
+
+# Stream execution events
+async for event in superbear_graph.astream(state, stream_mode="updates"):
+    print(f"Node executed: {event}")
+    
+# Example output:
+# Node executed: {'input': {...}}
+# Node executed: {'intent': {'intent': 'therapy', 'confidence': 0.85}}
+# Node executed: {'therapy': {...therapy_output...}}
+# Node executed: {'merge': {...final_output...}}
+```
+
+### Graph Visualization
+
+```python
+# Display graph structure
+import pprint
+pprint.pprint(superbear_graph.get_graph().to_dict())
+
+# Visualize graph
+# from IPython.display import Image
+# Image(superbear_graph.get_graph().draw_mermaid_png())
+```
+
+### Node Execution Analysis
+
+```python
+# Profile node execution times
+import time
+
+async def benchmark_nodes(state):
+    times = {}
+    
+    for node_name in ["input", "intent", "research", "therapy", "merge"]:
+        start = time.time()
+        result = await superbear_graph.invoke({...}, node=node_name)
+        times[node_name] = time.time() - start
+    
+    return times
+
+# Debug specific node
+state = AgentState(...)
+research_result = await research_node(state)
+print(f"Research output: {research_result.research_output}")
+```
+
+### Test SuperBear Graph
+
+```python
+# Run graph without API
+python test_agent.py
+
+# Expected output:
+# ✅ Graph compiled successfully
+# ✅ Input node test passed
+# ✅ Intent detection test passed
+# ✅ Research node test passed
+# ✅ Therapy node test passed
+# ✅ Merge node test passed
+# ✅ Full graph execution test passed
+# ✅ All 8 tests passed
+```
+
+### Graph State Inspection
+
+```python
+# At each node, inspect full state
+@app.post("/api/chat/debug")
+async def chat_debug(request, user):
+    state = AgentState(...)
+    
+    # Inspect state progression
+    async for event in superbear_graph.astream(state):
+        node = event.get("node")
+        state_snapshot = event.get("state")
+        
+        print(f"\n--- {node} Node ---")
+        print(f"Intent: {state_snapshot.intent}")
+        print(f"Research complete: {state_snapshot.research_complete}")
+        print(f"Therapy complete: {state_snapshot.therapy_complete}")
+        print(f"Final output: {state_snapshot.final_output}")
+```
+
+---
+
+## Future Enhancements
+
+### Near-term (LangGraph Enhancements)
+
+1. **Human-in-the-Loop**: Add approval node for critical coaching suggestions
+   - Insert new node between data processing and merge
+   - Manual approval for risk-related advice
+
+2. **Multi-turn Conversation State**:
+   - Extend AgentState to track conversation history
+   - Update nodes to reference previous turns
+
+3. **Streaming Responses**:
+   - Stream node outputs to frontend in real-time
+   - Use LangGraph's streaming capabilities
+
+4. **Intent Confidence Routing**:
+   - If confidence < threshold, route to clarification node
+   - Ask user to clarify their intent
+
+### Medium-term (Architecture)
+
+5. **Custom Nodes**:
+   - Add analytics node for trade performance analysis
+   - Add market sentiment node
+   - Add peer learning node
+
+6. **Recursive Subgraphs**:
+   - Therapy node can call mini-research graph
+   - Research node can request emotional context
+
+7. **Vector Memory Integration**:
+   - Replace simple memory with semantic vector DB
+   - Enable semantic similarity search across teachings
+
+8. **Multi-Modal Input**:
+   - Accept voice input → transcribe → same graph
+   - Accept chart images → analyze → research node
+
+### Long-term (Scaling)
+
+9. **Agent Network**:
+   - Multiple specialized SuperBear instances
+   - Communication between agents
+   - Collaborative coaching
+
+10. **Persistent Learning**:
+    - Aggregate learnings across all users
+    - Improve prompts based on effectiveness metrics
+    - A/B test different coaching strategies
+
+---
+
+## Support & Contribution
+
+**For Issues With**:
+- **Agent Logic** → `agent/tutor_agent.py`
+- **Memory System** → `memory/learning_memory.py`
+- **LLM Integration** → `services/llm_service.py`
+- **Prompt Engineering** → `prompts/*.py`
+- **API Integration** → `main.py` and auth routes

@@ -106,3 +106,7 @@ class LLMService:
         """
         response = self._call_with_retry(prompt)
         return response.text
+
+
+# Create a global instance for use across the application
+llm_service = LLMService()

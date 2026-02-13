@@ -8,6 +8,7 @@ Provides REST API endpoints with JWT authentication and MongoDB.
 import logging
 import os
 from contextlib import asynccontextmanager
+from datetime import datetime
 import requests as http_requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
@@ -15,9 +16,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 
-from agent import run_agent
+from agent.graph import superbear_graph
+from agent.state import AgentState
 from memory import LearningMemory
-from database import connect_to_mongo, close_mongo_connection
+from database import connect_to_mongo, close_mongo_connection, db
 from auth.schemas import UserResponse
 from auth.routes import router as auth_router
 from auth.dependencies import get_current_active_user
@@ -187,77 +189,80 @@ async def chat(
     current_user: UserResponse = Depends(get_current_active_user)
 ):
     """
-    Chat endpoint for SuperBear.
+    Unified chat endpoint using SuperBear LangGraph.
     
+    Automatically detects intent and routes to research, therapy, or both.
+
     Request body:
     {
         "message": "user's message text",
-        "session_id": "optional session identifier",
-        "user_profile": {
-            "name": "...",
-            "tradingLevel": "beginner|intermediate|advanced",
-            "learningStyle": "visual|reading|hands-on",
-            "riskTolerance": "low|medium|high",
-            "preferredMarkets": "...",
-            "tradingFrequency": "..."
-        },
-        "trade_data": {
-            "stockCode": "...",
-            "stockName": "...",
-            "action": "buy|sell",
-            "units": "...",
-            "price": "...",
-            "date": "..."
-        }
+        "session_id": "optional session identifier"
     }
-    
-    Returns JSON:
-    {
-        "observation": "...",
-        "analysis": "...",
-        "learning_concept": "...",
-        "why_it_matters": "...",
-        "teaching_explanation": "...",
-        "teaching_example": "...",
-        "actionable_takeaway": "...",
-        "next_learning_suggestion": "..."
-    }
+
+    Returns merged response based on detected intent.
     """
     try:
-        # Use authenticated user's profile as base
-        user_profile = request.user_profile.model_dump() if request.user_profile else {
+        # Load user's memory from MongoDB
+        memory_doc = await db.memories.find_one({"user_id": str(current_user.id)})
+
+        # Build user profile from authenticated user
+        user_profile = {
             "name": current_user.username or current_user.email,
-            "tradingLevel": current_user.trading_level,
-            "learningStyle": current_user.learning_style,
-            "riskTolerance": current_user.risk_tolerance,
-            "preferredMarkets": current_user.preferred_markets,
-            "tradingFrequency": current_user.trading_frequency
+            "email": current_user.email,
+            "trading_level": getattr(current_user, "trading_level", "beginner"),
+            "learning_style": getattr(current_user, "learning_style", "visual"),
+            "risk_tolerance": getattr(current_user, "risk_tolerance", "medium"),
         }
-        
-        # Add the user's message as a question
-        user_profile["user_question"] = request.message
-        
-        # Get session memory
-        memory = get_or_create_session_memory(request.session_id)
-        
-        # Prepare input for agent
-        input_data = {
-            "user_profile": user_profile,
-            "trade_data": request.trade_data.model_dump(exclude_none=True) if request.trade_data else None,
-            "user_question": request.message
-        }
-        
-        # Run the agent
-        response, updated_memory = run_agent(input_data, memory=memory)
-        
-        # Update session memory
-        session_memory[request.session_id] = updated_memory
-        
-        logger.info(f"Chat request from user: {current_user.email}")
-        return response
-    
+
+        # Create initial state for SuperBear graph
+        state = AgentState(
+            user_message=request.message,
+            user_id=str(current_user.id),
+            user_profile=user_profile,
+            memory_doc=memory_doc or {},
+            session_id=request.session_id or "default",
+            timestamp=datetime.now().isoformat(),
+            intent="both",  # Will be determined by intent_node
+            confidence=0.0,
+        )
+
+        # Run SuperBear graph - automatic intent detection & routing
+        result = await superbear_graph.ainvoke(state)
+
+        # Update memory with new teachings/emotions
+        if not memory_doc:
+            memory_doc = {
+                "user_id": str(current_user.id),
+                "concepts_taught": [],
+                "emotional_patterns": [],
+            }
+
+        if result.research_output:
+            memory_doc["concepts_taught"].append({
+                "concept": result.research_output.get("learning_concept"),
+                "explanation": result.research_output.get("teaching_explanation"),
+                "timestamp": result.timestamp,
+            })
+
+        if result.therapy_output:
+            memory_doc["emotional_patterns"].append({
+                "emotion": result.therapy_output.get("emotional_state"),
+                "trigger": request.message[:100],  # Store first 100 chars as trigger
+                "timestamp": result.timestamp,
+            })
+
+        # Save updated memory to MongoDB
+        await db.memories.update_one(
+            {"user_id": str(current_user.id)},
+            {"$set": memory_doc},
+            upsert=True,
+        )
+
+        logger.info(f"Chat request from user: {current_user.email}, intent: {result.intent}")
+        return result.final_output or {"error": "No output generated"}
+
     except Exception as e:
-        logger.error(f"Error in /api/chat: {e}")
+        logger.error(f"Error in /api/chat: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -267,72 +272,80 @@ async def therapy(
     current_user: UserResponse = Depends(get_current_active_user)
 ):
     """
-    Therapy chat endpoint for Trading Therapy Bear.
-    Focuses on emotional support and trading psychology around recent trades.
+    Therapy endpoint - Convenience route for wellness-focused messages.
     
+    Routes to SuperBear LangGraph with intent classification.
+    Emotionally-focused messages are automatically routed to therapy mode.
+
     Request body:
     {
-        "message": "user's message text",
-        "session_id": "optional session identifier",
-        "user_profile": { ... },
-        "trade_data": { ... }
+        "message": "user's emotional concern or question"
     }
-    
-    Returns JSON:
-    {
-        "acknowledgment": "...",
-        "emotional_insight": "...",
-        "therapeutic_question": "...",
-        "coping_strategy": "...",
-        "encouragement": "...",
-        "emotional_pattern": "..."
-    }
+
+    Returns wellness-focused response with emotional support and coping strategies.
     """
     try:
-        # Use authenticated user's profile as base
-        user_profile = request.user_profile.model_dump() if request.user_profile else {
+        # Load user's memory from MongoDB
+        memory_doc = await db.memories.find_one({"user_id": str(current_user.id)})
+
+        # Build user profile from authenticated user
+        user_profile = {
             "name": current_user.username or current_user.email,
-            "tradingLevel": current_user.trading_level,
-            "learningStyle": current_user.learning_style,
-            "riskTolerance": current_user.risk_tolerance,
-            "preferredMarkets": current_user.preferred_markets,
-            "tradingFrequency": current_user.trading_frequency
+            "email": current_user.email,
+            "trading_level": getattr(current_user, "trading_level", "beginner"),
+            "learning_style": getattr(current_user, "learning_style", "visual"),
+            "risk_tolerance": getattr(current_user, "risk_tolerance", "medium"),
         }
-        
-        user_profile["user_question"] = request.message
-        
-        # Get session memory
-        memory = get_or_create_session_memory(request.session_id)
-        
-        # Build observation & analysis (reuse existing helpers)
-        from prompts import build_observation_context, build_analysis_context, build_memory_summary
-        from prompts.therapy_prompt import build_therapy_prompt
-        from services.llm_service import LLMService
-        
-        trade_data = request.trade_data.model_dump(exclude_none=True) if request.trade_data else None
-        
-        observation = build_observation_context(
-            trade_data=trade_data,
-            user_question=request.message
+
+        # Create initial state for SuperBear graph
+        state = AgentState(
+            user_message=request.message,
+            user_id=str(current_user.id),
+            user_profile=user_profile,
+            memory_doc=memory_doc or {},
+            session_id=request.session_id or "therapy-default",
+            timestamp=datetime.now().isoformat(),
+            intent="both",  # Will be determined by intent_node
+            confidence=0.0,
         )
-        
-        analysis = build_analysis_context(
-            past_mistakes=memory.get_recent_mistakes(limit=5),
-            recent_trades=memory.get_recent_trades(limit=3),
-            focus_areas=memory.get_focus_areas()
+
+        # Run SuperBear graph - automatic intent detection & routing
+        result = await superbear_graph.ainvoke(state)
+
+        # Update memory with new emotional patterns
+        if not memory_doc:
+            memory_doc = {
+                "user_id": str(current_user.id),
+                "concepts_taught": [],
+                "emotional_patterns": [],
+            }
+
+        if result.therapy_output:
+            memory_doc["emotional_patterns"].append({
+                "emotion": result.therapy_output.get("emotional_state"),
+                "trigger": request.message[:100],
+                "timestamp": result.timestamp,
+            })
+
+        if result.research_output:
+            memory_doc["concepts_taught"].append({
+                "concept": result.research_output.get("learning_concept"),
+                "timestamp": result.timestamp,
+            })
+
+        # Save updated memory to MongoDB
+        await db.memories.update_one(
+            {"user_id": str(current_user.id)},
+            {"$set": memory_doc},
+            upsert=True,
         )
-        
-        memory_summary = build_memory_summary(memory)
-        
-        prompt = build_therapy_prompt(
-            profile=user_profile,
-            observation=observation,
-            analysis_input=analysis,
-            memory_summary=memory_summary
-        )
-        
-        llm = LLMService()
-        response = llm.call_gemini_json(prompt)
+
+        logger.info(f"Therapy request from user: {current_user.email}, intent: {result.intent}")
+        return result.final_output or {"error": "No output generated"}
+
+    except Exception as e:
+        logger.error(f"Error in /api/therapy: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
         
         # Update memory
         memory.increment_interaction()
