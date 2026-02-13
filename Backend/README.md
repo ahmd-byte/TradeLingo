@@ -1,7 +1,7 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
   <img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" />
-  <img src="https://img.shields.io/badge/MongoDB-7.0-13AA52?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
+  <img src="https://img.shields.io/badge/MongoDB_Atlas-7.0-13AA52?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />
   <img src="https://img.shields.io/badge/LangGraph-0.1.13-FF6F00?style=for-the-badge&logo=graphql&logoColor=white" alt="LangGraph" />
   <img src="https://img.shields.io/badge/Gemini_AI-2.5_Flash-4285F4?style=for-the-badge&logo=google&logoColor=white" alt="Gemini" />
   <img src="https://img.shields.io/badge/JWT-Auth-FFA500?style=for-the-badge&logo=auth0&logoColor=white" alt="JWT" />
@@ -10,7 +10,7 @@
 
 # 🐻 TradeLingo Backend — AI Trading Tutor Agent
 
-> A modern, modular AI agent system with JWT authentication and MongoDB persistence. Delivers personalized trading education and emotional wellness coaching through a **LangGraph-based agentic workflow** with automatic intent detection and conditional routing, powered by Google Gemini and FastAPI.
+> A modern, modular AI agent system with JWT authentication and MongoDB Atlas persistence. Delivers personalized trading education and emotional wellness coaching through a **LangGraph-based agentic workflow** with automatic intent detection and conditional routing, powered by Google Gemini and FastAPI.
 
 ---
 
@@ -109,8 +109,8 @@ Backend/
 
 ### Prerequisites
 
-- **Python 3.11+**
-- **MongoDB 5.0+** — [Install locally](https://docs.mongodb.com/manual/installation/) or use [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+- **Python 3.12+**
+- **MongoDB Atlas** — [Create free cluster](https://www.mongodb.com/cloud/atlas) (whitelist your IP under Network Access)
 - **Google Gemini API Key** — [Get one here](https://aistudio.google.com/apikey)
 
 ### 1. Clone & Navigate
@@ -163,14 +163,25 @@ FRONTEND_URL=http://localhost:3000
 ### 5. Run the Server
 
 ```bash
-uvicorn main:app --reload --host 127.0.0.1 --port 5000
+uvicorn main:app --reload
 ```
 
-The server will start at **http://127.0.0.1:5000** with automatic reload on code changes.
+The server will start at **http://127.0.0.1:8000** with automatic reload on code changes.
 
 **API Documentation:**
-- Swagger UI: http://localhost:5000/api/docs
-- ReDoc: http://localhost:5000/api/redoc
+- Swagger UI: http://127.0.0.1:8000/docs
+- OpenAPI JSON: http://127.0.0.1:8000/openapi.json
+
+### 6. Demo Login
+
+A demo user is pre-configured:
+
+| Field | Value |
+|---|---|
+| Email | `ahmadsyafi01@gmail.com` |
+| Password | `1234` |
+
+> **Note:** Password hashing is disabled for demo mode (plain text comparison).
 
 ---
 
@@ -433,7 +444,7 @@ Constructs contextual prompts that guide the agent's nodes, incorporating:
 | `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | Access token expiration | `30` |
 | `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | Refresh token expiration | `7` |
 | `GEMINI_API_KEY` | Google Gemini API key | Required |
-| `FRONTEND_URL` | Frontend origin for CORS | `http://localhost:5173` |
+| `FRONTEND_URL` | Frontend origin for CORS | `http://localhost:3000` |
 
 ### MongoDB Setup
 
@@ -458,7 +469,7 @@ mongod
   ```bash
   python -c "import secrets; print(secrets.token_urlsafe(32))"
   ```
-- 🔒 **Password Hashing**: Uses bcrypt with automatic salt generation
+- 🔒 **Password Hashing**: Disabled for demo mode (plain text). Re-enable bcrypt in `auth/utils.py` for production.
 - 🎟️ **Token Lifecycle**: Access tokens short-lived (30 min), refresh tokens long-lived (7 days)
 
 ---
@@ -469,18 +480,18 @@ mongod
 
 ```bash
 # Activate virtual environment
-.\venv\Scripts\activate
+.venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Start server with auto-reload
-uvicorn main:app --reload --host 127.0.0.1 --port 5000
+uvicorn main:app --reload
 ```
 
 ### Server Output
 ```
-INFO:     Uvicorn running on http://127.0.0.1:5000
+INFO:     Uvicorn running on http://127.0.0.1:8000
 INFO:     MongoDB connected to tradelingo database
 INFO:     Application startup complete
 ```
@@ -489,31 +500,31 @@ INFO:     Application startup complete
 
 ```bash
 # 1. Register a user
-curl -X POST http://localhost:5000/api/auth/register \
+curl -X POST http://localhost:8000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
     "username": "testuser",
-    "password": "securepassword123",
+    "password": "testpass",
     "trading_level": "beginner"
   }'
 
 # Response includes access_token and refresh_token
 
 # 2. Login
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "test@example.com",
-    "password": "securepassword123"
+    "email": "ahmadsyafi01@gmail.com",
+    "password": "1234"
   }'
 
 # 3. Access protected endpoint
-curl -X GET http://localhost:5000/api/auth/me \
+curl -X GET http://localhost:8000/api/auth/me \
   -H "Authorization: Bearer <access_token>"
 
 # 4. Test AI tutor with auth
-curl -X POST http://localhost:5000/api/chat \
+curl -X POST http://localhost:8000/api/chat \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{
