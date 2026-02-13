@@ -4,7 +4,7 @@ Implements JWT authentication with MongoDB.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from bson import ObjectId
 
@@ -71,8 +71,8 @@ async def register(request: UserRegisterRequest):
             "preferred_markets": "Stocks",
             "trading_frequency": "weekly",
             "is_active": True,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc)
         }
         
         result = await db["users"].insert_one(new_user)

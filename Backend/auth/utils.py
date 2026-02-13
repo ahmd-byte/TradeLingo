@@ -3,7 +3,7 @@ Authentication utilities for password hashing and JWT token management.
 Implements industry-standard security practices.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -73,9 +73,9 @@ def create_access_token(
     to_encode = data.copy()
     
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + ACCESS_TOKEN_EXPIRE_DELTA
+        expire = datetime.now(timezone.utc) + ACCESS_TOKEN_EXPIRE_DELTA
     
     to_encode.update({"exp": expire})
     
@@ -106,9 +106,9 @@ def create_refresh_token(
     to_encode["token_type"] = "refresh"
     
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + REFRESH_TOKEN_EXPIRE_DELTA
+        expire = datetime.now(timezone.utc) + REFRESH_TOKEN_EXPIRE_DELTA
     
     to_encode.update({"exp": expire})
     

@@ -5,7 +5,7 @@ Async-compatible database setup using Motor (async MongoDB driver).
 
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from dotenv import load_dotenv
 
@@ -119,8 +119,8 @@ async def find_user_by_id(user_id: str):
 
 async def create_user(user_data: dict):
     """Create a new user."""
-    user_data["created_at"] = datetime.utcnow()
-    user_data["updated_at"] = datetime.utcnow()
+    user_data["created_at"] = datetime.now(timezone.utc)
+    user_data["updated_at"] = datetime.now(timezone.utc)
     user_data["is_active"] = True
     
     result = await db["users"].insert_one(user_data)
@@ -130,7 +130,7 @@ async def create_user(user_data: dict):
 async def update_user(user_id: str, update_data: dict):
     """Update user data."""
     from bson import ObjectId
-    update_data["updated_at"] = datetime.utcnow()
+    update_data["updated_at"] = datetime.now(timezone.utc)
     
     result = await db["users"].update_one(
         {"_id": ObjectId(user_id)},
@@ -147,7 +147,7 @@ async def delete_user(user_id: str):
         {
             "$set": {
                 "is_active": False,
-                "updated_at": datetime.utcnow()
+                "updated_at": datetime.now(timezone.utc)
             }
         }
     )
