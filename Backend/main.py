@@ -9,7 +9,6 @@ import logging
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime
-import requests as http_requests
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -29,15 +28,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-
-# Sheety API configuration (optional external storage)
-PROFILES_ENDPOINT = os.getenv("PROFILES_ENDPOINT", "")
-TRADES_ENDPOINT = os.getenv("TRADES_ENDPOINT", "")
-HEADERS = {
-    "Content-Type": "application/json",
-    "Authorization": f"Bearer {os.getenv('SHEETY_TOKEN', '')}"
-}
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -114,52 +104,6 @@ class TherapyRequest(BaseModel):
     session_id: Optional[str] = "therapy-default"
     user_profile: Optional[UserProfile] = None
     trade_data: Optional[TradeData] = None
-
-
-def create_profile(form_data):
-    payload = {
-        "profiling": {
-            "name": form_data.get("name", ""),
-            "tradingLevel": form_data.get("tradingLevel", ""),
-            "learningStyle": form_data.get("learningStyle", ""),
-            "riskTolerance": form_data.get("riskTolerance", ""),
-            "preferredMarkets": form_data.get("preferredMarkets", ""),
-            "tradingFrequency": form_data.get("tradingFrequency", "")
-        }
-    }
-    response = http_requests.post(PROFILES_ENDPOINT, json=payload, headers=HEADERS)
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to create profile: {response.text}")
-    profile_id = response.json().get("profiling", {}).get("id")
-    if not profile_id:
-        raise Exception(f"Profile ID not found in response: {response.json()}")
-    return profile_id, response.json()
-
-
-def post_trade(form_data, profile_id):
-    stock_code = form_data.get("stock_code")
-    stock_name = form_data.get("stock_name")
-    if not stock_code and not stock_name:
-        return None  # No trade data to post
-
-    payload = {
-        "pasttrade": {
-            "profileId": profile_id,
-            "date": form_data.get("date", ""),
-            "stockCode": stock_code or "",
-            "stockName": stock_name or "",
-            "action": form_data.get("action", ""),
-            "units": form_data.get("units", ""),
-            "price": form_data.get("price", ""),
-            "intraday": form_data.get("intraday", "")
-        }
-    }
-    print("Posting trade:", payload["pasttrade"])  # Debug
-    response = http_requests.post(TRADES_ENDPOINT, json=payload, headers=HEADERS)
-    if response.status_code not in [200, 201]:
-        print("Failed to post trade:", response.text)
-        return None
-    return response.json()
 
 
 def get_or_create_session_memory(session_id: str) -> LearningMemory:
