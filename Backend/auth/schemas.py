@@ -25,7 +25,7 @@ class TokenResponse(BaseModel):
             }
         }
 
-
+#can change to our group format
 class UserRegisterRequest(BaseModel):
     """Request model for user registration."""
     email: EmailStr = Field(..., description="User email address")
@@ -61,7 +61,7 @@ class UserLoginRequest(BaseModel):
             }
         }
 
-
+#can change to our group format
 class UserResponse(BaseModel):
     """Response model for user data (excludes password)."""
     id: str = Field(..., description="User ID", alias="_id")
