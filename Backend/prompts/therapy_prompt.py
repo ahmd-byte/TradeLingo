@@ -69,9 +69,9 @@ DO NOT:
 - Provide medical advice (suggest professional help only if warranted)
 
 USER PROFILE:
-- Trading Level: {user_profile.get('tradingLevel', 'beginner')}
-- Risk Tolerance: {user_profile.get('riskTolerance', 'medium')}
-- Learning Style: {user_profile.get('learningStyle', 'visual')}
+- Trading Level: {user_profile.get('trading_level', 'beginner')}
+- Risk Tolerance: {user_profile.get('risk_tolerance', 'medium')}
+- Learning Style: {user_profile.get('learning_style', 'visual')}
 
 EMOTIONAL HISTORY:
 {emotion_history}
