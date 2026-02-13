@@ -71,7 +71,7 @@ User Input
 └────────┬──────────┘
          ↓
 ┌───────────────────────────┐
-│  INTENT NODE              │ - Classify intent
+│  CLASSIFY NODE            │ - Classify intent
 │  - Run LLM classification │ - Analyze emotional state
 │  - Determine routing      │
 └────────┬──────────────────┘
@@ -367,25 +367,28 @@ async def merge_node(state: AgentState) -> AgentState:
 
 ```python
 from langgraph.graph import StateGraph, START, END
-from langgraph.types import Send
 
 def create_superbear_graph():
     """
     Build the SuperBear LangGraph workflow.
+    
+    Note: The intent classification node is named "classify" (not "intent")
+    to avoid conflict with the AgentState.intent field, which LangGraph
+    reserves as a state key.
     """
     
     graph_builder = StateGraph(AgentState)
     
     # Add nodes
     graph_builder.add_node("input", input_node)
-    graph_builder.add_node("intent", intent_node)
+    graph_builder.add_node("classify", intent_node)  # Named "classify" to avoid state key conflict
     graph_builder.add_node("research", research_node)
     graph_builder.add_node("therapy", therapy_node)
     graph_builder.add_node("merge", merge_node)
     
     # Add edges
     graph_builder.add_edge(START, "input")
-    graph_builder.add_edge("input", "intent")
+    graph_builder.add_edge("input", "classify")
     
     # Conditional routing based on intent
     def route_based_on_intent(state: AgentState):
@@ -398,7 +401,7 @@ def create_superbear_graph():
             return ["research", "therapy"]
     
     graph_builder.add_conditional_edges(
-        "intent",
+        "classify",
         route_based_on_intent,
         {"research": "research", "therapy": "therapy"}
     )
@@ -427,7 +430,7 @@ INPUT_NODE
   • Parse user message
   • Extract metadata
   ↓
-INTENT_NODE
+CLASSIFY_NODE (intent detection)
   • Classify: research/therapy/both
   • Detect emotional state
   ↓
@@ -639,29 +642,29 @@ Wrapper around Google Gemini 2.5 Flash Lite API with deterministic JSON output.
 
 ```python
 class LLMService:
-    def call_gemini_json(self, prompt, output_schema=None):
+    async def call_gemini_json(self, prompt, output_schema=None):
         """
-        Call Gemini with JSON output guarantee.
+        Call Gemini with JSON output guarantee (async, non-blocking).
         
         Returns: dict (parsed JSON)
         Raises: ValueError if JSON parsing fails
         """
     
-    def call_gemini_text(self, prompt):
+    async def call_gemini_text(self, prompt):
         """
-        Call Gemini for plain text output.
+        Call Gemini for plain text output (async, non-blocking).
         
         Returns: str (cleaned text)
         """
 ```
 
 **Features**:
+- ✅ Fully async — uses `asyncio.to_thread` to avoid blocking the event loop
 - ✅ JSON output enforcement
 - ✅ Markdown cleanup
-- ✅ Error handling & retries
-- ✅ Token counting
+- ✅ Error handling & retries with `asyncio.sleep` (non-blocking)
 - ✅ Configurable model selection
-- ✅ Temperature control for determinism
+- ✅ Rate-limit retry with exponential backoff
 
 **Configuration**:
 ```python
@@ -677,9 +680,9 @@ max_tokens = 2000
 Add LangGraph to requirements.txt:
 
 ```
-langgraph==0.1.8
-langchain-core==0.2.0
-langchain-google-genai==0.1.0
+langgraph==0.1.13
+langchain-core==0.2.43
+langchain-google-genai==1.0.10
 ```
 
 Installation:
@@ -944,7 +947,7 @@ async for event in superbear_graph.astream(state, stream_mode="updates"):
     
 # Example output:
 # Node executed: {'input': {...}}
-# Node executed: {'intent': {'intent': 'therapy', 'confidence': 0.85}}
+# Node executed: {'classify': {'intent': 'therapy', 'confidence': 0.85}}
 # Node executed: {'therapy': {...therapy_output...}}
 # Node executed: {'merge': {...final_output...}}
 ```
@@ -970,7 +973,7 @@ import time
 async def benchmark_nodes(state):
     times = {}
     
-    for node_name in ["input", "intent", "research", "therapy", "merge"]:
+    for node_name in ["input", "classify", "research", "therapy", "merge"]:
         start = time.time()
         result = await superbear_graph.invoke({...}, node=node_name)
         times[node_name] = time.time() - start
