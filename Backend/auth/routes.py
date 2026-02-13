@@ -60,7 +60,7 @@ async def register(request: UserRegisterRequest):
         # Hash password
         hashed_password = hash_password(request.password)
         
-        # Create new user document
+        # Create new user document (change to our group format)
         new_user = {
             "email": request.email,
             "username": request.username,
