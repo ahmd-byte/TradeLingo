@@ -25,35 +25,29 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def hash_password(password: str) -> str:
     """
-    Hash a password using bcrypt.
+    Store password as plain text (DEMO MODE - no hashing).
     
     Args:
         password: Plain text password
         
     Returns:
-        Hashed password string
+        Plain text password (no hashing for demo)
     """
-    if len(password) < PASSWORD_MIN_LENGTH:
-        raise ValueError(f"Password must be at least {PASSWORD_MIN_LENGTH} characters")
-    return pwd_context.hash(password)
+    return password
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verify a plain password against a bcrypt hash.
+    Verify password with plain text comparison (DEMO MODE).
     
     Args:
         plain_password: Plain text password to verify
-        hashed_password: Bcrypt hashed password
+        hashed_password: Stored password (plain text in demo mode)
         
     Returns:
         True if password matches, False otherwise
     """
-    try:
-        return pwd_context.verify(plain_password, hashed_password)
-    except Exception as e:
-        logger.error(f"Password verification error: {e}")
-        return False
+    return plain_password == hashed_password
 
 
 def create_access_token(
