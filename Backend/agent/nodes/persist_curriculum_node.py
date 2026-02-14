@@ -14,6 +14,25 @@ from agent.education_state import EducationState
 logger = logging.getLogger(__name__)
 
 
+def _enhance_modules_with_progress(modules: list) -> list:
+    """
+    Add progress tracking fields to each module.
+    
+    First module gets status="current", others get status="locked".
+    All modules get mastery_score=0, interaction_count=0.
+    """
+    enhanced = []
+    for i, module in enumerate(modules):
+        enhanced_module = {
+            **module,
+            "status": "current" if i == 0 else "locked",
+            "mastery_score": 0,
+            "interaction_count": 0,
+        }
+        enhanced.append(enhanced_module)
+    return enhanced
+
+
 async def persist_curriculum_node(state: EducationState) -> dict:
     """
     Insert the curriculum into the ``lesson_plans`` collection.
@@ -22,10 +41,21 @@ async def persist_curriculum_node(state: EducationState) -> dict:
         {
             "user_id": str,
             "learning_objective": str,
-            "modules": list,
+            "modules": list (with status, mastery_score, interaction_count),
             "knowledge_gaps": dict,
             "created_at": datetime,
             "current_module_index": 0
+        }
+
+    Module shape:
+        {
+            "topic": str,
+            "difficulty": str,
+            "explanation_style": str,
+            "estimated_duration": str,
+            "status": "locked" | "current" | "completed",
+            "mastery_score": int (0-100),
+            "interaction_count": int
         }
 
     Returns:
@@ -35,10 +65,14 @@ async def persist_curriculum_node(state: EducationState) -> dict:
     curriculum = state.get("curriculum", {})
     user_id = state["user_id"]
 
+    # Enhance modules with progress tracking fields
+    raw_modules = curriculum.get("modules", [])
+    enhanced_modules = _enhance_modules_with_progress(raw_modules)
+
     doc = {
         "user_id": user_id,
         "learning_objective": curriculum.get("learning_objective", ""),
-        "modules": curriculum.get("modules", []),
+        "modules": enhanced_modules,
         "progression_strategy": curriculum.get("progression_strategy", ""),
         "knowledge_gaps": state.get("knowledge_gaps", {}),
         "created_at": datetime.now(timezone.utc),

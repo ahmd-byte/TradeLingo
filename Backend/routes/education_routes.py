@@ -3,10 +3,11 @@ Education Pipeline API routes.
 
 POST /api/education/start       — Phase 1: generate diagnostic quiz
 POST /api/education/submit-quiz — Phase 2: submit answers → curriculum
+GET  /api/education/progress    — Get user's learning progress
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -14,6 +15,7 @@ from pydantic import BaseModel, Field
 from auth.schemas import UserResponse
 from auth.dependencies import get_current_active_user
 from agent.education_graph import generate_quiz, generate_curriculum
+from services import progress_service
 
 logger = logging.getLogger(__name__)
 
@@ -121,4 +123,93 @@ async def submit_quiz(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error while generating curriculum",
+        )
+
+
+# ---------------------------------------------------------------------------
+# Progress response schemas
+# ---------------------------------------------------------------------------
+class ModuleProgress(BaseModel):
+    """Progress details for a single module."""
+    index: int = Field(..., description="Module index in curriculum")
+    topic: str = Field(..., description="Module topic")
+    difficulty: str = Field(..., description="Module difficulty level")
+    status: str = Field(..., description="locked | current | completed")
+    mastery_score: int = Field(..., description="Mastery score 0-100")
+    interaction_count: int = Field(..., description="Number of interactions")
+    estimated_duration: str = Field(..., description="Estimated duration")
+
+
+class ProgressResponse(BaseModel):
+    """Response for GET /api/education/progress."""
+    has_lesson_plan: bool = Field(..., description="Whether user has a lesson plan")
+    learning_objective: Optional[str] = Field(None, description="Overall learning objective")
+    current_module: Optional[ModuleProgress] = Field(None, description="Current module details")
+    completed_modules: List[ModuleProgress] = Field(default=[], description="Completed modules")
+    remaining_modules: List[ModuleProgress] = Field(default=[], description="Locked/remaining modules")
+    progress_percentage: float = Field(..., description="Overall progress percentage")
+    total_modules: int = Field(..., description="Total number of modules")
+    progression_strategy: Optional[str] = Field(None, description="How modules build on each other")
+
+
+# ---------------------------------------------------------------------------
+# GET /api/education/progress
+# ---------------------------------------------------------------------------
+@router.get("/progress", response_model=ProgressResponse)
+async def get_progress(
+    current_user: UserResponse = Depends(get_current_active_user),
+):
+    """
+    Get the user's learning progress across all modules.
+    
+    Returns:
+    - Overall learning objective
+    - Current module being studied
+    - List of completed modules
+    - List of remaining/locked modules
+    - Progress percentage (completed / total * 100)
+    """
+    try:
+        progress = await progress_service.get_progress_summary(user_id=current_user.id)
+        
+        # Convert module dicts to ModuleProgress models
+        def to_module_progress(m: dict) -> ModuleProgress:
+            return ModuleProgress(
+                index=m.get("index", 0),
+                topic=m.get("topic", "Unknown"),
+                difficulty=m.get("difficulty", "beginner"),
+                status=m.get("status", "locked"),
+                mastery_score=m.get("mastery_score", 0),
+                interaction_count=m.get("interaction_count", 0),
+                estimated_duration=m.get("estimated_duration", "N/A"),
+            )
+        
+        current_module = None
+        if progress.get("current_module"):
+            current_module = to_module_progress(progress["current_module"])
+        
+        completed_modules = [
+            to_module_progress(m) for m in progress.get("completed_modules", [])
+        ]
+        
+        remaining_modules = [
+            to_module_progress(m) for m in progress.get("remaining_modules", [])
+        ]
+        
+        return ProgressResponse(
+            has_lesson_plan=progress.get("has_lesson_plan", False),
+            learning_objective=progress.get("learning_objective"),
+            current_module=current_module,
+            completed_modules=completed_modules,
+            remaining_modules=remaining_modules,
+            progress_percentage=progress.get("progress_percentage", 0),
+            total_modules=progress.get("total_modules", 0),
+            progression_strategy=progress.get("progression_strategy"),
+        )
+    
+    except Exception as e:
+        logger.error(f"Education progress error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error while fetching progress",
         )

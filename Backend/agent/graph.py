@@ -1,8 +1,8 @@
 """
 SuperBear LangGraph Definition and Execution
 
-Curriculum-aware workflow:
-Input → Load Learning Context → Intent → Conditional Routing → Branch Node → Merge → Output
+Curriculum-aware workflow with mastery detection:
+Input → Load Learning Context → Intent → Conditional Routing → Branch Node → Mastery Detection → Merge → Output
 """
 
 from langgraph.graph import StateGraph, START, END
@@ -16,12 +16,13 @@ from agent.nodes import (
     load_learning_context_node,
     trade_explain_node,
     curriculum_modify_node,
+    mastery_detection_node,
 )
 
 
 def create_superbear_graph():
     """
-    Build the curriculum-aware SuperBear LangGraph workflow.
+    Build the curriculum-aware SuperBear LangGraph workflow with mastery detection.
 
     Workflow:
     1. START → input_node
@@ -33,8 +34,9 @@ def create_superbear_graph():
          curriculum_modify  → curriculum_modify_node
          emotional_support  → therapy_node
          general_question   → research_node (fallback)
-    5. branch node → merge_node
-    6. merge_node → END
+    5. branch node → mastery_detection_node (tracks progress & detects understanding)
+    6. mastery_detection_node → merge_node
+    7. merge_node → END
 
     Returns:
         Compiled LangGraph workflow
@@ -50,6 +52,7 @@ def create_superbear_graph():
     graph_builder.add_node("therapy", therapy_node)
     graph_builder.add_node("trade_explain", trade_explain_node)
     graph_builder.add_node("curriculum_modify", curriculum_modify_node)
+    graph_builder.add_node("mastery_detection", mastery_detection_node)  # NEW
     graph_builder.add_node("merge", merge_node)
 
     # Linear flow: input → load_context → classify
@@ -81,11 +84,14 @@ def create_superbear_graph():
         },
     )
 
-    # All branch nodes converge to merge
-    graph_builder.add_edge("trade_explain", "merge")
-    graph_builder.add_edge("curriculum_modify", "merge")
-    graph_builder.add_edge("therapy", "merge")
-    graph_builder.add_edge("research", "merge")
+    # All branch nodes converge to mastery detection (NEW flow)
+    graph_builder.add_edge("trade_explain", "mastery_detection")
+    graph_builder.add_edge("curriculum_modify", "mastery_detection")
+    graph_builder.add_edge("therapy", "mastery_detection")
+    graph_builder.add_edge("research", "mastery_detection")
+
+    # Mastery detection leads to merge
+    graph_builder.add_edge("mastery_detection", "merge")
 
     # Final output
     graph_builder.add_edge("merge", END)

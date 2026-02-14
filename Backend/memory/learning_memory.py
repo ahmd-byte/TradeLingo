@@ -2,6 +2,14 @@
 Learning Memory Module
 Manages lightweight session memory for the tutor agent.
 Tracks concepts taught, observed mistakes, and recent trades.
+
+Note on interaction tracking:
+- Session-level interactions: Tracked in LearningMemory (in-memory, per session)
+- Module-level interactions: Tracked in lesson_plans via progress_service (persistent)
+
+The mastery_detection_node automatically updates persistent interaction counts
+in MongoDB when processing educational messages. LearningMemory remains 
+lightweight and suitable for session-scoped context.
 """
 
 import json

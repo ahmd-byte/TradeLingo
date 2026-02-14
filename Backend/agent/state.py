@@ -39,6 +39,9 @@ class AgentState(BaseModel):
     therapy_output: Optional[Dict[str, Any]] = None
     therapy_complete: bool = False
 
+    # Mastery detection output
+    mastery_result: Optional[Dict[str, Any]] = None
+
     # Memory
     memory_doc: Optional[Dict] = None
 
