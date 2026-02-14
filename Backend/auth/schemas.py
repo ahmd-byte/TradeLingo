@@ -39,7 +39,7 @@ class TokenResponse(BaseModel):
 class UserRegisterRequest(BaseModel):
     """Request model for user registration."""
     email: EmailStr = Field(..., description="User email address")
-    username: str = Field(..., min_length=3, max_length=50, description="Username")
+    username: str = Field(..., min_length=1, max_length=50, description="Username")
     password: str = Field(..., min_length=1, description="Password")
     trading_level: Optional[str] = Field("beginner", description="Trading experience level")
     learning_style: Optional[str] = Field("visual", description="Preferred learning style")

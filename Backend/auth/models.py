@@ -74,7 +74,7 @@ class UserInDB(BaseModel):
 class UserCreate(BaseModel):
     """User data for creation."""
     email: EmailStr
-    username: str = Field(..., min_length=3, max_length=50)
+    username: str = Field(..., min_length=1, max_length=50)
     password: str = Field(..., min_length=8)
     trading_level: Optional[str] = "beginner"
     learning_style: Optional[str] = "visual"

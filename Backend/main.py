@@ -176,21 +176,21 @@ async def chat(
                 "emotional_patterns": [],
             }
 
-        research_output = result.get("research_output")
-        therapy_output = result.get("therapy_output")
+        research_output = result.research_output
+        therapy_output = result.therapy_output
 
         if research_output:
             memory_doc.setdefault("concepts_taught", []).append({
                 "concept": research_output.get("learning_concept"),
                 "explanation": research_output.get("teaching_explanation"),
-                "timestamp": result.get("timestamp"),
+                "timestamp": result.timestamp,
             })
 
         if therapy_output:
             memory_doc.setdefault("emotional_patterns", []).append({
                 "emotion": therapy_output.get("emotional_state"),
                 "trigger": request.message[:100],  # Store first 100 chars as trigger
-                "timestamp": result.get("timestamp"),
+                "timestamp": result.timestamp,
             })
 
         # Cap arrays to the most recent MEMORY_CAP entries
@@ -204,8 +204,8 @@ async def chat(
             upsert=True,
         )
 
-        logger.info(f"Chat request from user: {current_user.email}, intent: {result.get('intent')}")
-        return result.get("final_output") or {"error": "No output generated"}
+        logger.info(f"Chat request from user: {current_user.email}, intent: {result.intent}")
+        return result.final_output or {"error": "No output generated"}
 
     except Exception as e:
         logger.error(f"Error in /api/chat: {e}", exc_info=True)
@@ -268,20 +268,20 @@ async def therapy(
                 "emotional_patterns": [],
             }
 
-        therapy_output = result.get("therapy_output")
-        research_output = result.get("research_output")
+        therapy_output = result.therapy_output
+        research_output = result.research_output
 
         if therapy_output:
             memory_doc.setdefault("emotional_patterns", []).append({
                 "emotion": therapy_output.get("emotional_state"),
                 "trigger": request.message[:100],
-                "timestamp": result.get("timestamp"),
+                "timestamp": result.timestamp,
             })
 
         if research_output:
             memory_doc.setdefault("concepts_taught", []).append({
                 "concept": research_output.get("learning_concept"),
-                "timestamp": result.get("timestamp"),
+                "timestamp": result.timestamp,
             })
 
         # Cap arrays to the most recent MEMORY_CAP entries
@@ -295,8 +295,8 @@ async def therapy(
             upsert=True,
         )
 
-        logger.info(f"Therapy request from user: {current_user.email}, intent: {result.get('intent')}")
-        return result.get("final_output") or {"error": "No output generated"}
+        logger.info(f"Therapy request from user: {current_user.email}, intent: {result.intent}")
+        return result.final_output or {"error": "No output generated"}
 
     except Exception as e:
         logger.error(f"Error in /api/therapy: {e}", exc_info=True)

@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import superBearImage from "figma:asset/789c2c0c2a8de258540ceea8886d63826611f10a.png";
+import { sendMessage } from '../../services/chatService';
+import { explainTrade } from '../../services/tradeService';
+import TradeDiagnosticView from './TradeDiagnosticView';
+import type { TradeDiagnostic } from '../../types/api';
 
 // Initial greeting text
 const greetingText = "SuperBear turns your trades into a private research.";
-
-// AI Response (mock - will come from backend later)
-const mockAiResponse = "I analyzed your EUR/USD trade from yesterday. You entered at a strong resistance level without waiting for confirmation. Your stop loss was too tight at 15 pips, but your risk management was solid. The real issue? Momentum bias - you were chasing the win after two successful trades. Let's break down what happened and how to avoid this pattern.";
 
 interface Message {
   id: number;
   type: 'user' | 'ai';
   text: string;
   quickReplies?: { label: string; action: string }[];
+  tradeDiagnostic?: TradeDiagnostic;
 }
 
 interface SuperBearProps {
@@ -70,7 +72,7 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
     return () => clearInterval(typingInterval);
   }, [speechBubbleVisible, messages]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!userInput.trim() || isAiResponding) return; // Block if AI is responding
     
     const userMessageText = userInput; // Capture before clearing
@@ -98,44 +100,41 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
       onProcessingChange(true);
     }
     
-    // ============================================
-    // 5. BACKEND INTEGRATION (TODO)
-    // ============================================
-    // Replace this setTimeout with actual backend API call:
-    // const response = await fetch('/api/superbear', {
-    //   method: 'POST',
-    //   body: JSON.stringify({ message: userMessageText })
-    // });
-    // const aiResponse = await response.json();
-    
-    // ============================================
-    // 6. AI RESPONSE AFTER PROCESSING COMPLETES
-    // ============================================
-    const PROCESSING_DURATION = 6000; // 6 seconds - matches Intelligence animation
-    
-    setTimeout(() => {
-      // Add AI response to chat AFTER intelligence finishes
+    try {
+      // Call the backend chat API
+      const response = await sendMessage(userMessageText);
+
+      // Extract AI reply text from the backend response
+      const aiText =
+        (response.response as string) ||
+        JSON.stringify(response);
+
       const aiMessage: Message = {
         id: messageIdCounter.current++,
         type: 'ai',
-        text: mockAiResponse,
+        text: aiText,
         quickReplies: [
           { label: 'Create a branch about this', action: 'create-branch' },
-          { label: 'I\'m feeling frustrated', action: 'emotional-support' }
-        ]
+          { label: "I'm feeling frustrated", action: 'emotional-support' },
+        ],
       };
-      
+
       setMessages(prev => [...prev, aiMessage]);
-      
-      // Stop Intelligence processing (steps freeze in completed state)
+    } catch {
+      const errorMessage: Message = {
+        id: messageIdCounter.current++,
+        type: 'ai',
+        text: 'Sorry, something went wrong. Please try again.',
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      // Stop Intelligence processing
       if (onProcessingChange) {
         onProcessingChange(false);
       }
-      
-      // RE-ENABLE INPUT - User can send new message now
       setIsAiResponding(false);
       setIsProcessingComplete(true);
-    }, PROCESSING_DURATION);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,10 +152,36 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
     }
   };
 
-  const handleQuickReply = (action: string) => {
-    console.log('Quick reply action:', action);
-    // Handle different quick reply actions here
-    // This will later integrate with backend AI agent
+  const handleQuickReply = async (action: string) => {
+    if (action === 'create-branch') {
+      // Request a trade diagnostic from the backend
+      setIsAiResponding(true);
+      if (onProcessingChange) onProcessingChange(true);
+
+      try {
+        const diagnostic = await explainTrade();
+        const diagnosticMessage: Message = {
+          id: messageIdCounter.current++,
+          type: 'ai',
+          text: '',
+          tradeDiagnostic: diagnostic,
+        };
+        setMessages(prev => [...prev, diagnosticMessage]);
+      } catch {
+        const errorMsg: Message = {
+          id: messageIdCounter.current++,
+          type: 'ai',
+          text: 'Could not load trade diagnostic. Please try again.',
+        };
+        setMessages(prev => [...prev, errorMsg]);
+      } finally {
+        if (onProcessingChange) onProcessingChange(false);
+        setIsAiResponding(false);
+      }
+    } else if (action === 'emotional-support') {
+      // Send a therapy-related follow-up
+      setUserInput("I'm feeling frustrated about my recent trades");
+    }
   };
 
   return (
@@ -229,11 +254,17 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
                   {message.type === 'ai' && (
                     <div className="flex flex-col gap-3">
                       <div className="flex justify-start">
-                        <div className="bg-[#5eb3ff] border-[3px] border-black rounded-[16px] px-4 py-3 shadow-[3px_3px_0px_#000000] max-w-[85%]">
-                          <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-black leading-relaxed">
-                            {message.text}
-                          </p>
-                        </div>
+                        {message.tradeDiagnostic ? (
+                          <div className="max-w-[90%]">
+                            <TradeDiagnosticView data={message.tradeDiagnostic} />
+                          </div>
+                        ) : (
+                          <div className="bg-[#5eb3ff] border-[3px] border-black rounded-[16px] px-4 py-3 shadow-[3px_3px_0px_#000000] max-w-[85%]">
+                            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-black leading-relaxed">
+                              {message.text}
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {/* Quick Reply Buttons */}

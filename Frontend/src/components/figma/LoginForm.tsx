@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ArrowLeft, Send } from "lucide-react";
 import imgChatGptImageFeb72026034014Pm1 from "figma:asset/c47576d9fb019c19ae2380c4945c7cde9e97a55b.png";
+import { login } from "../../services/authService";
+import { AxiosError } from "axios";
 
 interface LoginFormProps {
   onBack: () => void;
@@ -23,29 +25,16 @@ export default function LoginForm({ onBack, onSuccess }: LoginFormProps) {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual FastAPI backend call
-      // const response = await fetch('YOUR_FASTAPI_URL/api/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // });
-      // const data = await response.json();
-
-      // Mock successful login for now
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Store user data in localStorage for now (replace with proper auth later)
-      localStorage.setItem(
-        "superbear_user",
-        JSON.stringify({
-          username: formData.username,
-          // In production, this will come from your backend JWT token
-        }),
-      );
-
+      // The backend login endpoint expects email, but the UI field is labelled "username".
+      // Users enter their email in the username field.
+      await login(formData.username, formData.password);
       onSuccess();
     } catch (err) {
-      setError("Login failed. Please check your credentials.");
+      const axiosErr = err as AxiosError<{ detail?: string }>;
+      const message =
+        axiosErr.response?.data?.detail || "Login failed. Please check your credentials.";
+      setError(message);
+    } finally {
       setIsLoading(false);
     }
   };

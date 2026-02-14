@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import bearOnCouchImage from "figma:asset/8adb0b3f526f6a4651ba2ba39730f80958c50632.png";
+import { sendTherapyMessage } from '../../services/chatService';
 
 // Initial greeting text
 const greetingText = "Let's talk about your recent trades.";
@@ -97,11 +98,26 @@ export default function TradingTherapy() {
     setHasStartedSession(true);
   };
 
-  const handleSendMessage = () => {
-    if (!userInput.trim()) return;
-    // Handle sending the message here
-    console.log('User message:', userInput);
+  const [isSending, setIsSending] = useState(false);
+
+  const handleSendMessage = async () => {
+    if (!userInput.trim() || isSending) return;
+
+    const messageText = userInput;
     setUserInput('');
+    setIsSending(true);
+
+    try {
+      const response = await sendTherapyMessage(messageText, 'therapy-session');
+      const aiText = (response.response as string) || JSON.stringify(response);
+      // Update the speech bubble with the AI response
+      setDisplayedText(aiText);
+      setIsTypingComplete(true);
+    } catch {
+      setDisplayedText('Sorry, something went wrong. Please try again.');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

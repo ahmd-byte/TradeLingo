@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '../ui/button';
 import imgChatGptImageFeb72026034014Pm1 from "figma:asset/c47576d9fb019c19ae2380c4945c7cde9e97a55b.png";
+import { register } from '../../services/authService';
+import { AxiosError } from 'axios';
 
 interface SignUpFormProps {
   onBack: () => void;
@@ -23,27 +25,18 @@ export default function SignUpForm({ onBack, onSuccess }: SignUpFormProps) {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual FastAPI backend call
-      // const response = await fetch('YOUR_FASTAPI_URL/api/auth/signup', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // });
-      // const data = await response.json();
-      
-      // Mock successful signup for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Store user data in localStorage for now (replace with proper auth later)
-      localStorage.setItem('superbear_user', JSON.stringify({
+      await register({
         username: formData.username,
         email: formData.email,
-        // In production, this will come from your backend JWT token
-      }));
-      
+        password: formData.password,
+      });
       onSuccess();
     } catch (err) {
-      setError('Sign up failed. Please try again.');
+      const axiosErr = err as AxiosError<{ detail?: string }>;
+      const message =
+        axiosErr.response?.data?.detail || 'Sign up failed. Please try again.';
+      setError(message);
+    } finally {
       setIsLoading(false);
     }
   };

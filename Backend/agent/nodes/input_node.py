@@ -22,8 +22,8 @@ async def input_node(state: AgentState) -> dict:
     """
 
     # Validate message
-    if not state.get("user_message") or len(state["user_message"].strip()) < 3:
+    if not state.user_message or len(state.user_message.strip()) < 3:
         raise ValueError("Message too short. Please provide more context.")
 
     # The message is valid - pass through the cleaned message
-    return {"user_message": state["user_message"].strip()}
+    return {"user_message": state.user_message.strip()}
