@@ -1,123 +1,17 @@
 import { useState, useEffect } from 'react';
 import imgChatGptImageFeb72026034014Pm1 from "figma:asset/c47576d9fb019c19ae2380c4945c7cde9e97a55b.png";
 import waveBearImage from "figma:asset/7ed597cb08cb24aaa452f4146ff3f118bd3b20b8.png";
-import chartImage from "figma:asset/0190d5064779e34c50ff7ec67d9155ba71a49748.png";
-import { Button } from "../ui/button";
+import { startEducation, submitQuiz } from '../../services/educationService';
+import type { QuizQuestion as ApiQuizQuestion, StartEducationResponse } from '../../types/api';
+import { AxiosError } from 'axios';
 
-// Types
-type QuizQuestion = {
-  id: number;
-  question: string;
-  options: string[];
-  correctAnswer: number; // index of correct answer
-  image?: string; // Optional image for image-based questions
-};
-
+// Local types used by UI components
 type AnswerResult = {
-  questionId: number;
+  questionIndex: number;
   selectedAnswer: number;
-  isCorrect: boolean;
+  selectedText: string;
+  isCorrect: boolean | null; // null when correct_answer not provided by backend
 };
-
-type TradingBehavior = {
-  id: string;
-  name: string;
-  emoji: string;
-  description: string;
-  traits: string[];
-};
-
-// Trading Behavior Types - Four types: Scalper, Day Trading, Swing Trading, Investment Trading
-const tradingBehaviors: TradingBehavior[] = [
-  {
-    id: 'scalper',
-    name: 'Scalper',
-    emoji: '⚡',
-    description: 'You execute multiple quick trades throughout the day, holding positions for seconds to minutes. You thrive on fast execution and small, frequent profits.',
-    traits: ['Very high screen time', 'Lightning-fast decisions', 'Rapid fire trades']
-  },
-  {
-    id: 'day-trading',
-    name: 'Day Trading',
-    emoji: '📊',
-    description: 'You open and close trades within the same day. No overnight positions. You focus on intraday price movements and momentum.',
-    traits: ['High screen time', 'Fast decisions', 'Timing is everything']
-  },
-  {
-    id: 'swing-trading',
-    name: 'Swing Trading',
-    emoji: '📈',
-    description: 'You hold trades for days to weeks, mixing technical analysis with some fundamentals. You focus on the bigger move and trend direction.',
-    traits: ['Lower screen time', 'Selective entries', 'Discipline to hold']
-  },
-  {
-    id: 'investment-trading',
-    name: 'Investment Trading',
-    emoji: '💎',
-    description: 'You hold positions for weeks to months or longer. You focus on fundamental analysis, macro trends, and long-term value.',
-    traits: ['Minimal screen time', 'Patient approach', 'Big picture focus']
-  }
-];
-
-// Sample Quiz Data
-const quizQuestions: QuizQuestion[] = [
-  {
-    id: 1,
-    question: "If a trade is held for a few minutes to capture a small move, this is most commonly called:",
-    options: [
-      "Day trading / intraday",
-      "Swing trading",
-      "Fundamental investing",
-      "Not sure"
-    ],
-    correctAnswer: 0
-  },
-  {
-    id: 2,
-    question: "Which trader relies most on chart patterns and indicators?",
-    options: [
-      "Technical trader",
-      "Fundamental trader",
-      "Long-term investor",
-      "Not sure"
-    ],
-    correctAnswer: 0
-  },
-  {
-    id: 3,
-    question: "Which factor is most important when holding a trade for weeks?",
-    options: [
-      "Trend direction",
-      "Entry speed",
-      "Spread size",
-      "Random price movement"
-    ],
-    correctAnswer: 0
-  },
-  {
-    id: 4,
-    question: "Why can a high win rate still result in losses?",
-    options: [
-      "Losses are larger than wins",
-      "Too few indicators",
-      "Markets are unfair",
-      "Not sure"
-    ],
-    correctAnswer: 0
-  },
-  {
-    id: 5,
-    question: "Looking at this chart, what would you focus on first before taking a trade?",
-    options: [
-      "Overall trend direction",
-      "Recent support and resistance",
-      "Short-term volatility and momentum",
-      "I'm not sure yet"
-    ],
-    correctAnswer: 0,
-    image: chartImage
-  }
-];
 
 // Components
 function ProgressBar({ progress }: { progress: number }) {
@@ -218,13 +112,15 @@ function QuestionScreen({
   onBack,
   selectedAnswer
 }: { 
-  question: QuizQuestion; 
+  question: ApiQuizQuestion; 
   questionNumber: number; 
   totalQuestions: number;
   onAnswer: (answerIndex: number) => void;
   onBack: () => void;
   selectedAnswer: number | null;
 }) {
+  const correctIdx = question.correct_answer ?? null;
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-8 pt-8">
       <div className="flex flex-col items-center gap-4 max-w-[700px] w-full">
@@ -235,84 +131,103 @@ function QuestionScreen({
           </p>
         </div>
 
-        {/* Chart Image - Show if question has an image */}
-        {question.image && (
-          <div className="w-full max-w-[600px] border-[5px] border-black rounded-[16px] overflow-hidden bg-white">
-            <img 
-              src={question.image} 
-              alt="Trading chart" 
-              className="w-full h-auto"
-            />
-          </div>
-        )}
-
         <h2 className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-white text-center uppercase tracking-wide leading-tight">
           {question.question}
         </h2>
       </div>
 
       <div className="flex flex-col gap-4 w-full items-center">
-        {question.options.map((option, index) => (
-          <button
-            key={index}
-            onClick={() => onAnswer(index)}
-            disabled={selectedAnswer !== null}
-            className={`w-full max-w-[520px] bg-white border-[5px] border-black rounded-[16px] px-8 py-5 font-['Arimo:Bold',sans-serif] font-bold text-[20px] text-black capitalize tracking-wide transition-all duration-150 hover:shadow-[4px_4px_0px_#000000] active:shadow-[1px_1px_0px_#000000] shadow-[8px_8px_0px_#000000] text-left disabled:opacity-50 disabled:cursor-not-allowed
-            ${selectedAnswer === index ? (index === question.correctAnswer ? 'bg-[#22c55e] text-white' : 'bg-[#ef4444] text-white') : ''}`}
-          >
-            {option}
-          </button>
-        ))}
+        {question.options.map((option, index) => {
+          let highlight = '';
+          if (selectedAnswer !== null && selectedAnswer === index) {
+            if (correctIdx !== null) {
+              highlight = index === correctIdx ? 'bg-[#22c55e] text-white' : 'bg-[#ef4444] text-white';
+            } else {
+              highlight = 'bg-[#3bd6ff] text-white';
+            }
+          }
+
+          return (
+            <button
+              key={index}
+              onClick={() => onAnswer(index)}
+              disabled={selectedAnswer !== null}
+              className={`w-full max-w-[520px] bg-white border-[5px] border-black rounded-[16px] px-8 py-5 font-['Arimo:Bold',sans-serif] font-bold text-[20px] text-black capitalize tracking-wide transition-all duration-150 hover:shadow-[4px_4px_0px_#000000] active:shadow-[1px_1px_0px_#000000] shadow-[8px_8px_0px_#000000] text-left disabled:opacity-50 disabled:cursor-not-allowed ${highlight}`}
+            >
+              {option}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
-function EndScreen({ onComplete, correctCount, totalCount }: { onComplete: () => void; correctCount: number; totalCount: number }) {
-  const [animationStage, setAnimationStage] = useState<'analyzing' | 'cooking' | 'finalizing' | 'complete' | 'ready'>('analyzing');
+function EndScreen({ onComplete, correctCount, totalCount, onSubmitQuiz }: {
+  onComplete: () => void;
+  correctCount: number;
+  totalCount: number;
+  onSubmitQuiz: () => Promise<void>;
+}) {
+  const [animationStage, setAnimationStage] = useState<'analyzing' | 'cooking' | 'finalizing' | 'complete' | 'ready' | 'error'>('analyzing');
   const [progress, setProgress] = useState(0);
   const [cookingText, setCookingText] = useState('Identifying knowledge gaps...');
+  const [submitError, setSubmitError] = useState<string | null>(null);
   
   const percentage = Math.round((correctCount / totalCount) * 100);
 
-  // Animation progression
+  // Animation progression + quiz submission
   useEffect(() => {
+    let cancelled = false;
+
     // Stage 1: Analyzing (2 seconds)
     const timer1 = setTimeout(() => {
-      setAnimationStage('cooking');
-      setProgress(25);
+      if (!cancelled) { setAnimationStage('cooking'); setProgress(25); }
     }, 2000);
 
-    // Stage 2: Cooking - cycling text and progress (4 seconds total)
+    // Stage 2: Cooking - cycling text and progress
     const timer2 = setTimeout(() => {
-      setCookingText('Selecting perfect lessons...');
-      setProgress(50);
+      if (!cancelled) { setCookingText('Selecting perfect lessons...'); setProgress(50); }
     }, 3000);
 
+    // Fire quiz submission to backend during cooking animation
+    const submitPromise = onSubmitQuiz().catch((err) => {
+      if (!cancelled) {
+        const msg = err instanceof AxiosError
+          ? err.response?.data?.detail || err.message
+          : 'Failed to generate lesson plan';
+        setSubmitError(String(msg));
+        setAnimationStage('error');
+      }
+    });
+
     const timer3 = setTimeout(() => {
-      setCookingText('Crafting your learning path...');
-      setProgress(75);
+      if (!cancelled) { setCookingText('Crafting your learning path...'); setProgress(75); }
     }, 4500);
 
-    // Stage 3: Finalizing (2 seconds)
+    // Stage 3: Finalizing
     const timer4 = setTimeout(() => {
-      setAnimationStage('finalizing');
-      setCookingText('Adding final touches...');
-      setProgress(90);
+      if (!cancelled) { setAnimationStage('finalizing'); setCookingText('Adding final touches...'); setProgress(90); }
     }, 6000);
 
-    // Stage 4: Complete (1 second)
-    const timer5 = setTimeout(() => {
-      setAnimationStage('complete');
-      setProgress(100);
+    // Stage 4 & 5: Complete + Ready (wait for API to finish too)
+    const timer5 = setTimeout(async () => {
+      await submitPromise; // ensure API call has finished
+      if (!cancelled && animationStage !== 'error') {
+        setAnimationStage('complete');
+        setProgress(100);
+      }
     }, 8000);
 
-    // Stage 5: Ready - show button (0.5 seconds after complete)
-    const timer6 = setTimeout(() => {
-      setAnimationStage('ready');
+    const timer6 = setTimeout(async () => {
+      await submitPromise;
+      if (!cancelled && animationStage !== 'error') {
+        setAnimationStage('ready');
+      }
     }, 8500);
 
     return () => {
+      cancelled = true;
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearTimeout(timer3);
@@ -320,6 +235,7 @@ function EndScreen({ onComplete, correctCount, totalCount }: { onComplete: () =>
       clearTimeout(timer5);
       clearTimeout(timer6);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Calculate how many segments should be filled (out of 10)
@@ -458,6 +374,26 @@ function EndScreen({ onComplete, correctCount, totalCount }: { onComplete: () =>
           )}
         </div>
       )}
+
+      {/* Error state */}
+      {animationStage === 'error' && (
+        <div className="flex flex-col items-center gap-8 w-full max-w-[700px]">
+          <div className="text-[100px]">😔</div>
+          <div className="bg-[#ef4444]/20 border-[4px] border-[#ef4444] rounded-[24px] px-12 py-6">
+            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[24px] text-white text-center uppercase tracking-wide">
+              {submitError || 'Something went wrong'}
+            </p>
+          </div>
+          <button
+            onClick={onComplete}
+            className="bg-white border-[5px] border-black rounded-[24px] px-16 py-6 shadow-[8px_8px_0px_#000000] hover:shadow-[4px_4px_0px_#000000] active:shadow-[1px_1px_0px_#000000] transition-all duration-150"
+          >
+            <span className="font-['Arimo:Bold',sans-serif] font-bold text-[24px] text-black uppercase tracking-wide">
+              Continue Anyway
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -519,20 +455,62 @@ export default function QuizFlow({ onComplete, onBackToOnboarding }: { onComplet
   const [wrongStreak, setWrongStreak] = useState(0);
   const [showEndScreen, setShowEndScreen] = useState(false);
 
-  const currentQuestion = quizQuestions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / quizQuestions.length) * 100;
+  // Backend-driven state
+  const [quizQuestions, setQuizQuestions] = useState<ApiQuizQuestion[]>([]);
+  const [quizData, setQuizData] = useState<StartEducationResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  const currentQuestion = quizQuestions[currentQuestionIndex] ?? null;
+  const totalQuestions = quizQuestions.length;
+  const progress = totalQuestions > 0 ? ((currentQuestionIndex + 1) / totalQuestions) * 100 : 0;
+
+  /** Called when user clicks "Let's Go!" on intro screen. */
+  const handleStartQuiz = async () => {
+    setLoading(true);
+    setFetchError(null);
+    try {
+      const data = await startEducation();
+      if (!data.quiz_questions || data.quiz_questions.length === 0) {
+        throw new Error('No quiz questions received from server');
+      }
+      // Ensure every question has an options array (backend may omit it)
+      const validated = data.quiz_questions.map((q) => ({
+        ...q,
+        options: q.options && q.options.length > 0
+          ? q.options
+          : ['Not sure'],
+      }));
+      setQuizData({ ...data, quiz_questions: validated });
+      setQuizQuestions(validated);
+      setShowIntro(false);
+    } catch (err) {
+      const msg = err instanceof AxiosError
+        ? err.response?.data?.detail || err.message
+        : err instanceof Error ? err.message : 'Failed to load quiz';
+      setFetchError(String(msg));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /** Called during EndScreen animation to submit answers to backend. */
+  const handleSubmitQuiz = async () => {
+    if (!quizData) return;
+    const answerTexts = answers.map((a) => a.selectedText);
+    await submitQuiz({
+      quiz_questions: quizData.quiz_questions,
+      quiz_answers: answerTexts,
+    });
+  };
 
   const handleBack = () => {
     if (currentQuestionIndex > 0) {
-      // Go back to previous question
       setCurrentQuestionIndex(currentQuestionIndex - 1);
       setSelectedAnswer(null);
-      // Remove last answer from array
       setAnswers(answers.slice(0, -1));
-      // Recalculate streaks based on remaining answers
       recalculateStreaks(answers.slice(0, -1));
     } else if (onBackToOnboarding) {
-      // Go back to onboarding flow
       onBackToOnboarding();
     }
   };
@@ -547,9 +525,10 @@ export default function QuizFlow({ onComplete, onBackToOnboarding }: { onComplet
     let correct = 0;
     let wrong = 0;
     
-    // Count from the end backwards
     for (let i = answerHistory.length - 1; i >= 0; i--) {
-      if (answerHistory[i].isCorrect) {
+      const result = answerHistory[i].isCorrect;
+      if (result === null) break; // can't streak when correctness is unknown
+      if (result) {
         if (wrong > 0) break;
         correct++;
       } else {
@@ -563,31 +542,32 @@ export default function QuizFlow({ onComplete, onBackToOnboarding }: { onComplet
   };
 
   const handleAnswer = (answerIndex: number) => {
-    if (selectedAnswer !== null) return; // Prevent multiple selections
+    if (selectedAnswer !== null || !currentQuestion) return;
 
-    const isCorrect = answerIndex === currentQuestion.correctAnswer;
+    const correctIdx = currentQuestion.correct_answer ?? null;
+    const isCorrect = correctIdx !== null ? answerIndex === correctIdx : null;
     
-    // Update streaks
-    if (isCorrect) {
+    // Update streaks (only when correctness is known)
+    if (isCorrect === true) {
       setCorrectStreak(correctStreak + 1);
       setWrongStreak(0);
-    } else {
+    } else if (isCorrect === false) {
       setWrongStreak(wrongStreak + 1);
       setCorrectStreak(0);
     }
 
-    // Record answer
     const newAnswer: AnswerResult = {
-      questionId: currentQuestion.id,
+      questionIndex: currentQuestionIndex,
       selectedAnswer: answerIndex,
-      isCorrect
+      selectedText: currentQuestion.options[answerIndex],
+      isCorrect,
     };
     setAnswers([...answers, newAnswer]);
     setSelectedAnswer(answerIndex);
 
     // Auto-advance after delay
     setTimeout(() => {
-      if (currentQuestionIndex < quizQuestions.length - 1) {
+      if (currentQuestionIndex < totalQuestions - 1) {
         setCurrentQuestionIndex(currentQuestionIndex + 1);
         setSelectedAnswer(null);
       } else {
@@ -596,16 +576,50 @@ export default function QuizFlow({ onComplete, onBackToOnboarding }: { onComplet
     }, 1200);
   };
 
-  const correctCount = answers.filter(a => a.isCorrect).length;
+  const correctCount = answers.filter(a => a.isCorrect === true).length;
 
-  // Show intro screen first
+  // Show intro screen (+ loading/error overlay)
   if (showIntro) {
     return (
       <div className="bg-[var(--bg-primary)] min-h-screen w-full relative">
-        <QuizIntroScreen 
-          onStart={() => setShowIntro(false)} 
-          onBack={onBackToOnboarding}
-        />
+        {loading ? (
+          <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-8">
+            <div className="text-[100px] animate-bounce-slow">🐻</div>
+            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-white text-center uppercase tracking-wide animate-pulse">
+              SuperBear is preparing your quiz...
+            </p>
+          </div>
+        ) : fetchError ? (
+          <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-8">
+            <div className="text-[80px]">😔</div>
+            <div className="bg-[#ef4444]/20 border-[4px] border-[#ef4444] rounded-[24px] px-12 py-6 max-w-[600px]">
+              <p className="font-['Arimo:Bold',sans-serif] font-bold text-[20px] text-white text-center">
+                {fetchError}
+              </p>
+            </div>
+            <button
+              onClick={handleStartQuiz}
+              className="bg-white border-[5px] border-black rounded-[24px] px-16 py-6 shadow-[8px_8px_0px_#000000] hover:shadow-[4px_4px_0px_#000000] active:shadow-[1px_1px_0px_#000000] transition-all duration-150"
+            >
+              <span className="font-['Arimo:Bold',sans-serif] font-bold text-[24px] text-black uppercase tracking-wide">
+                Try Again
+              </span>
+            </button>
+            {onBackToOnboarding && (
+              <button
+                onClick={onBackToOnboarding}
+                className="font-['Arimo:Bold',sans-serif] font-bold text-[18px] text-white uppercase tracking-wide hover:text-[#f3ff00] transition-colors"
+              >
+                Back
+              </button>
+            )}
+          </div>
+        ) : (
+          <QuizIntroScreen 
+            onStart={handleStartQuiz} 
+            onBack={onBackToOnboarding}
+          />
+        )}
       </div>
     );
   }
@@ -614,12 +628,19 @@ export default function QuizFlow({ onComplete, onBackToOnboarding }: { onComplet
   if (showEndScreen) {
     return (
       <div className="bg-[var(--bg-primary)] min-h-screen w-full relative">
-        <EndScreen onComplete={onComplete} correctCount={correctCount} totalCount={quizQuestions.length} />
+        <EndScreen
+          onComplete={onComplete}
+          correctCount={correctCount}
+          totalCount={totalQuestions}
+          onSubmitQuiz={handleSubmitQuiz}
+        />
       </div>
     );
   }
 
   // Show quiz questions
+  if (!currentQuestion) return null;
+
   return (
     <div className="bg-[var(--bg-primary)] min-h-screen w-full relative">
       <ProgressBar progress={progress} />
@@ -629,7 +650,7 @@ export default function QuizFlow({ onComplete, onBackToOnboarding }: { onComplet
       <QuestionScreen
         question={currentQuestion}
         questionNumber={currentQuestionIndex + 1}
-        totalQuestions={quizQuestions.length}
+        totalQuestions={totalQuestions}
         onAnswer={handleAnswer}
         onBack={handleBack}
         selectedAnswer={selectedAnswer}

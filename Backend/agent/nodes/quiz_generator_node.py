@@ -13,7 +13,7 @@ from services.llm_service import llm_service
 logger = logging.getLogger(__name__)
 
 QUIZ_PROMPT_TEMPLATE = """\
-You are a trading education expert creating a diagnostic quiz for a student.
+You are a trading education expert. Create a 5-question multiple-choice diagnostic quiz.
 
 Student profile:
 - Trading level: {trading_level}
@@ -21,19 +21,17 @@ Student profile:
 - Preferred market: {preferred_market}
 - Learning style: {learning_style}
 
-Generate exactly 5 multiple-knowledge diagnostic questions.
-Each question must test a DIFFERENT core trading concept relevant to the
-student's level and market.
+RULES:
+1. Each question MUST have exactly 4 answer choices in the "options" array.
+2. Each question MUST have a "correct_answer" field (integer 0-3) indicating which option is correct.
+3. Each question tests a DIFFERENT core trading concept.
+4. The "options" field is REQUIRED for every question — do NOT omit it.
 
-Respond with ONLY the following JSON (no extra text):
-{{
-  "questions": [
-    {{
-      "question": "<question text>",
-      "concept_tested": "<short concept label>"
-    }}
-  ]
-}}
+Return ONLY this exact JSON structure, nothing else:
+
+{{"questions":[{{"question":"What is a bull market?","options":["Rising prices","Falling prices","Sideways movement","High volatility"],"correct_answer":0,"concept_tested":"Market Trends"}},{{"question":"<q2>","options":["<a>","<b>","<c>","<d>"],"correct_answer":0,"concept_tested":"<concept>"}},{{"question":"<q3>","options":["<a>","<b>","<c>","<d>"],"correct_answer":0,"concept_tested":"<concept>"}},{{"question":"<q4>","options":["<a>","<b>","<c>","<d>"],"correct_answer":0,"concept_tested":"<concept>"}},{{"question":"<q5>","options":["<a>","<b>","<c>","<d>"],"correct_answer":0,"concept_tested":"<concept>"}}]}}
+
+Replace ALL placeholder values above with real trading questions appropriate for the student's level.
 """
 
 
@@ -57,6 +55,23 @@ async def quiz_generator_node(state: EducationState) -> dict:
     result = await llm_service.call_gemini_json(prompt)
 
     questions = result.get("questions", [])
-    logger.info(f"[education] Generated {len(questions)} quiz questions for user {state.get('user_id')}")
 
-    return {"quiz_questions": questions}
+    # Validate and fix: ensure every question has options
+    validated = []
+    for q in questions:
+        if not isinstance(q, dict):
+            continue
+        if "options" not in q or not isinstance(q.get("options"), list) or len(q["options"]) < 2:
+            logger.warning(f"[education] Question missing options, adding defaults: {q.get('question', '')[:50]}")
+            q["options"] = [
+                "I know this well",
+                "I have some idea",
+                "I've heard of it but unsure",
+                "Not sure"
+            ]
+            q["correct_answer"] = None  # no grading for fallback
+        validated.append(q)
+
+    logger.info(f"[education] Generated {len(validated)} quiz questions for user {state.get('user_id')}")
+
+    return {"quiz_questions": validated}
