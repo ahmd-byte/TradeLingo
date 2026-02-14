@@ -86,8 +86,8 @@ Phase 2 (Curriculum Generation):
 
 ```
 Backend/
-├── main.py                          # FastAPI app, /api/chat & /api/therapy endpoints, app lifecycle
-├── database.py                      # MongoDB async connection (Motor), index creation, get_database()
+├── main.py                          # FastAPI app, /api/chat & /api/therapy endpoints (with chat_history persistence), app lifecycle
+├── database.py                      # MongoDB async connection (Motor), index creation (incl. quiz_history, chat_history), get_database()
 │
 ├── auth/                            # 🔐 JWT Authentication
 │   ├── config.py                    # JWT settings (secret, algorithm, expiry)
@@ -100,15 +100,15 @@ Backend/
 ├── agent/                           # 🤖 SuperBear LangGraph Agent
 │   ├── graph.py                     # SuperBear graph definition, create_superbear_graph(), run/stream helpers
 │   ├── education_graph.py           # Education pipeline: Phase 1 (quiz) & Phase 2 (curriculum) graphs
-│   ├── state.py                     # AgentState — Pydantic model shared across all SuperBear nodes
+│   ├── state.py                     # AgentState — Pydantic model shared across all SuperBear nodes (incl. quiz_history, chat_history)
 │   ├── education_state.py           # EducationState — TypedDict for the education pipeline
 │   ├── tutor_agent.py               # Legacy standalone TutorAgent class (OADT loop)
 │   └── nodes/                       # Individual graph nodes
 │       ├── input_node.py            # Validate user message (min length check)
-│       ├── load_learning_context_node.py  # Load curriculum + trade_type from MongoDB (no LLM)
+│       ├── load_learning_context_node.py  # Load curriculum + trade_type + quiz_history + chat_history from MongoDB (no LLM)
 │       ├── intent_node.py           # LLM-based intent classification (5 intent categories)
-│       ├── research_node.py         # Educational content via OADT loop (curriculum-aware)
-│       ├── therapy_node.py          # Wellness coaching via VACE framework
+│       ├── research_node.py         # Educational content via OADT loop (curriculum + quiz + chat history aware)
+│       ├── therapy_node.py          # Wellness coaching via VACE framework (chat history aware)
 │       ├── trade_explain_node.py    # Deep trade diagnostic engine (server-side P&L, bias detection)
 │       ├── curriculum_modify_node.py # Adjust learning plan based on user request
 │       ├── mastery_detection_node.py # LLM evaluates understanding, updates progress scores
@@ -130,7 +130,7 @@ Backend/
 │   └── tutor_prompt.py              # Legacy tutor prompt builder (standalone OADT)
 │
 ├── routes/                          # 🛤️ API route modules
-│   ├── education_routes.py          # /api/education/* (start, submit-quiz, progress)
+│   ├── education_routes.py          # /api/education/* (start, submit-quiz + quiz_history persistence, progress)
 │   └── trade_routes.py              # /api/trades/* (upload, my-type, explain, list)
 │
 ├── services/                        # 🔗 Business logic & external integrations
@@ -139,8 +139,8 @@ Backend/
 │   ├── progress_service.py          # Module completion, mastery scoring, interaction tracking
 │   └── reflection_service.py        # Learning profile CRUD, reflection persistence, difficulty adjustment
 │
-├── ARCHITECTURE.md                  # Detailed architecture documentation
-├── requirements.txt                 # Python dependencies
+├── requirements.txt                 # Python dependencies (UTF-16 encoded — see setup notes)
+├── requirements_clean.txt           # Auto-generated UTF-8 version for pip install
 ├── test_agent.py                    # Unit tests for SuperBear graph
 └── README.md                        # You are here
 ```
@@ -164,11 +164,11 @@ This section explains every node in the SuperBear conversational graph. If you n
 
 | | |
 |---|---|
-| **Purpose** | Fetch curriculum and trade type from MongoDB before intent classification |
+| **Purpose** | Fetch curriculum, trade type, quiz history, and chat history from MongoDB before intent classification |
 | **LLM call** | No |
-| **What it does** | Queries `lesson_plans` collection for the user's latest lesson plan. Extracts `current_curriculum`, `current_module`, and `knowledge_gaps`. Queries `users` collection for `trade_type`. Handles backward compatibility for old documents missing `status`/`mastery_score`/`interaction_count` fields. |
-| **State fields modified** | `current_curriculum`, `current_module`, `knowledge_gaps`, `trade_type` |
-| **Fallback** | If no lesson plan exists, fields stay `None` and downstream nodes use legacy (non-curriculum-aware) behaviour |
+| **What it does** | Queries `lesson_plans` collection for the user's latest lesson plan. Extracts `current_curriculum`, `current_module`, and `knowledge_gaps`. Queries `users` collection for `trade_type`. Loads last 5 quizzes from `quiz_history` collection (with full Q&A pairs). Loads last 20 messages from `chat_history` collection (in chronological order). Handles backward compatibility for old documents missing `status`/`mastery_score`/`interaction_count` fields. |
+| **State fields modified** | `current_curriculum`, `current_module`, `knowledge_gaps`, `trade_type`, `quiz_history`, `chat_history` |
+| **Fallback** | If no lesson plan exists, fields stay `None` and downstream nodes use legacy (non-curriculum-aware) behaviour. If no quiz or chat history exists, those fields stay `None` and prompts omit those context sections. |
 
 ### 3. Intent (Classify) Node — `agent/nodes/intent_node.py`
 
@@ -208,7 +208,7 @@ This section explains every node in the SuperBear conversational graph. If you n
 | **Purpose** | Educational content generation using the OADT loop |
 | **LLM call** | Yes |
 | **Triggered when** | `intent == "lesson_question"` or `"general_question"` |
-| **What it does** | Loads previously taught concepts from memory (avoids repetition). Builds prompt via `build_research_prompt()`. If a `current_module` exists, augments prompt with module topic, difficulty, weak concepts, and emotion context. Generates structured lesson: observation, analysis, concept, explanation, example, takeaway. |
+| **What it does** | Loads previously taught concepts from memory (avoids repetition). Builds prompt via `build_research_prompt()`. If a `current_module` exists, augments prompt with module topic, difficulty, weak concepts, and emotion context. If `quiz_history` exists, augments prompt with the student's diagnostic quiz performance (questions + answers). If `chat_history` exists, augments prompt with recent conversation for continuity. Generates structured lesson: observation, analysis, concept, explanation, example, takeaway. |
 | **State fields modified** | `research_output`, `research_complete` |
 
 **OADT Loop**: Observe → Analyze → Decide → Teach
@@ -220,7 +220,7 @@ This section explains every node in the SuperBear conversational graph. If you n
 | **Purpose** | Emotional wellness and trading psychology coaching |
 | **LLM call** | Yes |
 | **Triggered when** | `intent == "emotional_support"` |
-| **What it does** | Loads emotional patterns from memory. Builds prompt via `build_therapy_prompt()`. Generates: emotional validation, perspective reframing, coping strategies, educational focus tie-in, actionable steps, encouragement. |
+| **What it does** | Loads emotional patterns from memory. Builds prompt via `build_therapy_prompt()`. If `chat_history` exists, augments prompt with recent conversation for continuity. Generates: emotional validation, perspective reframing, coping strategies, educational focus tie-in, actionable steps, encouragement. |
 | **State fields modified** | `therapy_output`, `therapy_complete` |
 
 **VACE Loop**: Validate → Analyze → Coach → Empower
@@ -366,6 +366,8 @@ Business logic is kept in the `services/` directory, separate from graph nodes.
 | `lesson_plans` | Generated curricula | `user_id`, `learning_objective`, `modules[]` (with `status`, `mastery_score`, `interaction_count`), `current_module_index`, `knowledge_gaps` |
 | `learning_profiles` | Reflection data | `user_id`, `knowledge_gaps[]`, `repeated_mistakes[]`, `behavioral_pattern_summary`, `difficulty_level`, `emotional_tendencies[]`, `reflection_count` |
 | `memories` | Session memory snapshots | `user_id`, `concepts_taught[]`, `emotional_patterns[]` |
+| `quiz_history` | Persisted quiz Q&A pairs | `user_id`, `quiz_type`, `qa_pairs[]` (question, concept_tested, options, correct_answer, user_answer), `knowledge_gaps`, `created_at` |
+| `chat_history` | Full conversation history | `user_id`, `role` (user/ai), `message`, `intent`, `learning_concept`, `full_response` (AI only), `created_at` |
 
 ---
 
@@ -386,15 +388,15 @@ Business logic is kept in the `services/` directory, separate from graph nodes.
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `GET` | `/api/health` | No | Health check |
-| `POST` | `/api/chat` | Yes | Main chat — runs full SuperBear graph with intent detection |
-| `POST` | `/api/therapy` | Yes | Convenience wellness route — same graph, emotionally-focused |
+| `POST` | `/api/chat` | Yes | Main chat — runs full SuperBear graph with intent detection. Persists user message + AI response to `chat_history`. |
+| `POST` | `/api/therapy` | Yes | Convenience wellness route — same graph, emotionally-focused. Persists user message + AI response to `chat_history`. |
 
 ### 🎓 Education — `routes/education_routes.py`
 
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
 | `POST` | `/api/education/start` | Yes | Phase 1 — generate diagnostic quiz |
-| `POST` | `/api/education/submit-quiz` | Yes | Phase 2 — submit answers → gap analysis → curriculum generation |
+| `POST` | `/api/education/submit-quiz` | Yes | Phase 2 — submit answers → gap analysis → curriculum generation. Persists full Q&A pairs to `quiz_history`. |
 | `GET` | `/api/education/progress` | Yes | Get module-by-module learning progress |
 
 ### 📊 Trade History — `routes/trade_routes.py`
@@ -419,6 +421,51 @@ Business logic is kept in the `services/` directory, separate from graph nodes.
 | **Non-blocking reflection** | The reflection node is internal-only and failure-tolerant — the user always receives their response even if reflection errors. |
 | **Progressive mastery** | Users unlock modules sequentially through demonstrated understanding (tracked by mastery scores), not just time spent. |
 | **Backward compatibility** | Old lesson plan documents missing `status`/`mastery_score`/`interaction_count` fields are automatically enhanced at load time. |
+
+---
+
+## 🧬 Data Flow — How the AI Learns Per User
+
+Every piece of data stored in MongoDB feeds back into the AI to create a progressively personalized experience:
+
+```
+User registers
+     │
+     ▼
+┌─────────────────────────┐
+│  1. DIAGNOSTIC QUIZ     │ → Stored in quiz_history
+│     (5 questions)       │   (full Q&A pairs + concepts)
+└────────┬────────────────┘
+         ▼
+┌─────────────────────────┐
+│  2. GAP ANALYSIS        │ → knowledge_gaps stored
+│     + CURRICULUM        │   in lesson_plans
+└────────┬────────────────┘
+         ▼
+┌─────────────────────────┐
+│  3. USER CHATS WITH AI  │ → Each message stored in chat_history
+│                         │   (user msg + AI response + intent)
+└────────┬────────────────┘
+         ▼
+┌─────────────────────────┐
+│  4. NEXT AI RESPONSE    │ ← Loads ALL of the above:
+│     USES EVERYTHING     │   - quiz_history (what they got right/wrong)
+│                         │   - chat_history (conversation continuity)
+│                         │   - lesson_plans (current module, weak areas)
+│                         │   - learning_profiles (behavioral patterns)
+│                         │   - memories (concepts taught, emotions)
+└─────────────────────────┘
+```
+
+**What each collection contributes to AI context:**
+
+| Collection | How AI Uses It |
+|---|---|
+| `quiz_history` | Knows what quiz questions the student got right/wrong. References quiz performance when teaching related concepts. |
+| `chat_history` | Maintains conversation continuity. Avoids repeating itself. Builds on previous topics ("remember when we discussed X..."). |
+| `lesson_plans` | Constrains teaching to the current module topic. Reinforces weak concepts. Tracks mastery progression. |
+| `learning_profiles` | Adjusts difficulty level. Avoids repeated mistakes the student keeps making. Adapts to emotional tendencies. |
+| `memories` | Tracks which concepts have already been taught (avoids repetition). Tracks emotional patterns across sessions. |
 
 ---
 
@@ -450,8 +497,14 @@ source .venv/bin/activate
 
 ### 3. Install Dependencies
 
+> **Note:** The original `requirements.txt` has UTF-16 encoding. Use the clean version or install key packages directly.
+
 ```bash
-pip install -r requirements.txt
+# Option A: Use the clean requirements file
+pip install -r requirements_clean.txt
+
+# Option B: Install key packages directly (pip resolves sub-dependencies)
+pip install fastapi uvicorn python-dotenv "python-jose[cryptography]" bcrypt "passlib[bcrypt]" email-validator pymongo motor requests certifi charset-normalizer langgraph "langchain-core>=0.2,<0.3" langchain-google-genai langsmith google-generativeai google-genai pydantic httpx
 ```
 
 ### 4. Configure Environment Variables
@@ -475,19 +528,25 @@ GEMINI_API_KEY=your_gemini_api_key_here
 # ==================== API ENVIRONMENT ====================
 API_ENVIRONMENT=development
 FRONTEND_URL=http://localhost:3000
+
+# ==================== LANGSMITH (Optional) ====================
+LANGSMITH_TRACING=true
+LANGSMITH_ENDPOINT=https://api.smith.langchain.com
+LANGSMITH_API_KEY=your_langsmith_api_key_here
+LANGSMITH_PROJECT=tradelingo
 ```
 
 ### 5. Run the Server
 
 ```bash
-uvicorn main:app --reload --host 127.0.0.1 --port 5000
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-The server will start at **http://127.0.0.1:5000** with automatic reload on code changes.
+The server will start at **http://127.0.0.1:8000** with automatic reload on code changes.
 
 **API Documentation:**
-- Swagger UI: http://localhost:5000/docs
-- ReDoc: http://localhost:5000/redoc
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
 
 ---
 
@@ -504,7 +563,7 @@ The server will start at **http://127.0.0.1:5000** with automatic reload on code
 | `JWT_ACCESS_TOKEN_EXPIRE_MINUTES` | Access token expiration | `30` |
 | `JWT_REFRESH_TOKEN_EXPIRE_DAYS` | Refresh token expiration | `7` |
 | `GEMINI_API_KEY` | Google Gemini API key | Required |
-| `FRONTEND_URL` | Frontend origin for CORS | `http://localhost:5173` |
+| `FRONTEND_URL` | Frontend origin for CORS | `http://localhost:3000` |
 
 ### MongoDB Setup
 
@@ -540,19 +599,22 @@ mongod
 
 ```bash
 # Activate virtual environment
-.\venv\Scripts\activate
+.\.venv\Scripts\activate       # Windows
+source .venv/bin/activate      # macOS / Linux
 
 # Install dependencies
-pip install -r requirements.txt
+pip install -r requirements_clean.txt
 
 # Start server with auto-reload
-uvicorn main:app --reload --host 127.0.0.1 --port 5000
+uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 ### Server Output
 ```
-INFO:     Uvicorn running on http://127.0.0.1:5000
-INFO:     MongoDB connected to tradelingo database
+INFO:     Uvicorn running on http://127.0.0.1:8000
+INFO:     Connected to MongoDB: tradelingo
+INFO:     Database indexes created
+INFO:     Database connected successfully
 INFO:     Application startup complete
 ```
 
@@ -560,7 +622,7 @@ INFO:     Application startup complete
 
 ```bash
 # 1. Register a user
-curl -X POST http://localhost:5000/api/auth/register \
+curl -X POST http://localhost:8000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
@@ -572,7 +634,7 @@ curl -X POST http://localhost:5000/api/auth/register \
 # Response includes access_token and refresh_token
 
 # 2. Login
-curl -X POST http://localhost:5000/api/auth/login \
+curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@example.com",
@@ -580,11 +642,11 @@ curl -X POST http://localhost:5000/api/auth/login \
   }'
 
 # 3. Access protected endpoint
-curl -X GET http://localhost:5000/api/auth/me \
+curl -X GET http://localhost:8000/api/auth/me \
   -H "Authorization: Bearer <access_token>"
 
 # 4. Test AI tutor with auth
-curl -X POST http://localhost:5000/api/chat \
+curl -X POST http://localhost:8000/api/chat \
   -H "Authorization: Bearer <access_token>" \
   -H "Content-Type: application/json" \
   -d '{

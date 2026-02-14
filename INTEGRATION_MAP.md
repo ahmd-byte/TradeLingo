@@ -111,6 +111,7 @@
 | `App` | `Frontend/src/App.tsx` | `authService.logout` | Logout + session check |
 | `SuperBear` | `Frontend/src/components/figma/SuperBear.tsx` | `chatService.sendMessage`, `tradeService.explainTrade` | Chat + trade explain |
 | `TradingTherapy` | `Frontend/src/components/figma/TradingTherapy.tsx` | `chatService.sendTherapyMessage` | Therapy chat |
+| `QuizFlow` | `Frontend/src/components/figma/QuizFlow.tsx` | `educationService.startEducation`, `educationService.submitQuiz` | Diagnostic quiz + curriculum |
 
 ---
 
