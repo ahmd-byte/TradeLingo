@@ -42,8 +42,8 @@ async def merge_node(state: AgentState) -> dict:
             "type": "wellness",
             **(therapy_output or {}),
             "educational_focus": (
-                therapy_output.get("educational_focus")
-                if therapy_output
+                research_output.get("educational_focus")
+                if research_output
                 else None
             ),
             "related_concept": (
