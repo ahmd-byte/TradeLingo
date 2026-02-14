@@ -85,4 +85,5 @@ async def persist_curriculum_node(state: EducationState) -> dict:
         f"(_id={result.inserted_id})"
     )
 
-    return {}
+    # Must return at least one state key for LangGraph
+    return {"curriculum": curriculum}
