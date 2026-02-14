@@ -31,6 +31,24 @@ Stay within the current module topic when possible. Reinforce weak
 concepts naturally. Adapt tone to the student's emotional state.
 """
 
+QUIZ_HISTORY_ADDENDUM = """
+
+DIAGNOSTIC QUIZ HISTORY (the student's original quiz performance):
+{quiz_summary}
+
+Use this to understand what the student already knew and where they
+struggled. Reference their quiz answers when relevant to deepen learning.
+"""
+
+CHAT_HISTORY_ADDENDUM = """
+
+RECENT CONVERSATION HISTORY (last exchanges with this student):
+{chat_summary}
+
+Use this to maintain conversation continuity. Don't repeat things you've
+already explained. Build on previous topics and reference prior discussions.
+"""
+
 
 async def research_node(state: AgentState) -> AgentState:
     """
@@ -78,6 +96,37 @@ async def research_node(state: AgentState) -> AgentState:
                 trade_type=state.trade_type or "unknown",
                 detected_emotion=state.detected_emotion or state.emotional_state or "calm",
             )
+
+        # ----- Quiz history augmentation -----
+        if state.quiz_history:
+            quiz_lines = []
+            for quiz in state.quiz_history:
+                for pair in quiz.get("qa_pairs", []):
+                    q = pair.get("question", "")
+                    a = pair.get("user_answer", "")
+                    concept = pair.get("concept_tested", "")
+                    quiz_lines.append(f"  Q ({concept}): {q}")
+                    quiz_lines.append(f"  A: {a}")
+            if quiz_lines:
+                research_prompt += QUIZ_HISTORY_ADDENDUM.format(
+                    quiz_summary="\n".join(quiz_lines[:30])  # Cap at 30 lines
+                )
+
+        # ----- Chat history augmentation -----
+        if state.chat_history:
+            chat_lines = []
+            for msg in state.chat_history:
+                role = msg.get("role", "user")
+                text = msg.get("message", "")
+                # Truncate long AI messages for prompt efficiency
+                if len(text) > 200:
+                    text = text[:200] + "..."
+                prefix = "Student" if role == "user" else "SuperBear"
+                chat_lines.append(f"  {prefix}: {text}")
+            if chat_lines:
+                research_prompt += CHAT_HISTORY_ADDENDUM.format(
+                    chat_summary="\n".join(chat_lines[-20:])  # Last 20 lines
+                )
 
         # Get educational response from LLM
         response = await llm_service.call_gemini_json(research_prompt)

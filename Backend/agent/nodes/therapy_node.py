@@ -45,6 +45,23 @@ async def therapy_node(state: AgentState) -> AgentState:
             memory_doc=state.memory_doc,
         )
 
+        # ----- Chat history augmentation -----
+        if state.chat_history:
+            chat_lines = []
+            for msg in state.chat_history:
+                role = msg.get("role", "user")
+                text = msg.get("message", "")
+                if len(text) > 200:
+                    text = text[:200] + "..."
+                prefix = "Student" if role == "user" else "SuperBear"
+                chat_lines.append(f"  {prefix}: {text}")
+            if chat_lines:
+                therapy_prompt += (
+                    "\n\nRECENT CONVERSATION HISTORY:\n"
+                    + "\n".join(chat_lines[-20:])
+                    + "\n\nUse this to maintain conversation continuity and reference prior discussions."
+                )
+
         # Get wellness response from LLM
         response = await llm_service.call_gemini_json(therapy_prompt)
 

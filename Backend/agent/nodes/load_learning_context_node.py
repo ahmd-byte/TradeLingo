@@ -110,4 +110,58 @@ async def load_learning_context_node(state: AgentState) -> AgentState:
     else:
         state.trade_type = None
 
+    # ------------------------------------------------------------------
+    # 3. Load quiz history (all past quizzes for this user)
+    # ------------------------------------------------------------------
+    try:
+        quiz_cursor = db["quiz_history"].find(
+            {"user_id": user_id},
+            sort=[("created_at", -1)],
+        ).limit(5)  # Last 5 quizzes
+        quiz_docs = await quiz_cursor.to_list(length=5)
+        if quiz_docs:
+            state.quiz_history = [
+                {
+                    "quiz_type": doc.get("quiz_type", "diagnostic"),
+                    "qa_pairs": doc.get("qa_pairs", []),
+                    "knowledge_gaps": doc.get("knowledge_gaps", {}),
+                    "created_at": str(doc.get("created_at", "")),
+                }
+                for doc in quiz_docs
+            ]
+            logger.info(f"[context] Loaded {len(quiz_docs)} quiz(es) for user {user_id}")
+        else:
+            state.quiz_history = None
+    except Exception as e:
+        logger.debug(f"[context] Could not load quiz history: {e}")
+        state.quiz_history = None
+
+    # ------------------------------------------------------------------
+    # 4. Load recent chat history (last 20 messages)
+    # ------------------------------------------------------------------
+    try:
+        chat_cursor = db["chat_history"].find(
+            {"user_id": user_id},
+            sort=[("created_at", -1)],
+        ).limit(20)  # Last 20 messages (10 exchanges)
+        chat_docs = await chat_cursor.to_list(length=20)
+        if chat_docs:
+            # Reverse to chronological order
+            chat_docs.reverse()
+            state.chat_history = [
+                {
+                    "role": doc.get("role", "user"),
+                    "message": doc.get("message", ""),
+                    "intent": doc.get("intent"),
+                    "learning_concept": doc.get("learning_concept"),
+                }
+                for doc in chat_docs
+            ]
+            logger.info(f"[context] Loaded {len(chat_docs)} chat messages for user {user_id}")
+        else:
+            state.chat_history = None
+    except Exception as e:
+        logger.debug(f"[context] Could not load chat history: {e}")
+        state.chat_history = None
+
     return state
