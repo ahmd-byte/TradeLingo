@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import mascotImage from "figma:asset/c47576d9fb019c19ae2380c4945c7cde9e97a55b.png";
-import { Book, Sparkles, Flame, User, Lock, Trophy, Star } from 'lucide-react';
+import { Book, Sparkles, Flame, User, Lock, Trophy, Star, type LucideIcon } from 'lucide-react';
 import SuperBear from './SuperBear';
 import SuperBearRightPanel from './SuperBearRightPanel';
 import StreaksCenter from './StreaksCenter';
@@ -9,6 +9,7 @@ import ProfileCenter from './ProfileCenter';
 import ProfileRightPanel from './ProfileRightPanel';
 import LessonFlow from './LessonFlow';
 import BranchingRailCenter from './BranchingRail';
+import type { DashboardTab } from '../../routing/routes';
 
 // Types
 type LessonNode = {
@@ -31,8 +32,8 @@ const lessonPath: LessonNode[] = [
 ];
 
 // Components
-function LeftNavigation({ activeTab, onTabChange }: { activeTab: string; onTabChange: (tab: string) => void }) {
-  const navItems = [
+function LeftNavigation({ activeTab, onTabChange }: { activeTab: DashboardTab; onTabChange: (tab: DashboardTab) => void }) {
+  const navItems: Array<{ id: DashboardTab; label: string; icon: LucideIcon }> = [
     { id: 'learn', label: 'Learn', icon: Book },
     { id: 'superbear', label: 'SuperBear', icon: Sparkles },
     { id: 'streaks', label: 'Streaks', icon: Flame },
@@ -546,8 +547,13 @@ function RightPanel({ dailyXP, totalXP, isCollapsed, onToggleCollapse }: {
   );
 }
 
-export default function Dashboard({ onLogout }: { onLogout: () => void }) {
-  const [activeTab, setActiveTab] = useState('learn');
+interface DashboardProps {
+  activeTab: DashboardTab;
+  onTabChange: (tab: DashboardTab) => void;
+  onLogout: () => void;
+}
+
+export default function Dashboard({ activeTab, onTabChange, onLogout }: DashboardProps) {
   const [isSuperBearProcessing, setIsSuperBearProcessing] = useState(false);
   const [dailyXP, setDailyXP] = useState(12); // Current daily XP (out of 20)
   const [totalXP, setTotalXP] = useState(1830); // Total lifetime XP for leaderboard
@@ -608,7 +614,7 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   return (
     <div className="flex h-screen w-screen bg-[var(--bg-primary)] overflow-hidden">
-      <LeftNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <LeftNavigation activeTab={activeTab} onTabChange={onTabChange} />
       {renderContent()}
     </div>
   );

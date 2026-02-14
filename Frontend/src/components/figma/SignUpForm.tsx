@@ -6,9 +6,10 @@ import imgChatGptImageFeb72026034014Pm1 from "figma:asset/c47576d9fb019c19ae2380
 interface SignUpFormProps {
   onBack: () => void;
   onSuccess: () => void;
+  onLogin?: () => void;
 }
 
-export default function SignUpForm({ onBack, onSuccess }: SignUpFormProps) {
+export default function SignUpForm({ onBack, onSuccess, onLogin }: SignUpFormProps) {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -24,7 +25,7 @@ export default function SignUpForm({ onBack, onSuccess }: SignUpFormProps) {
 
     try {
       // TODO: Replace with actual FastAPI backend call
-      // const response = await fetch('YOUR_FASTAPI_URL/api/auth/signup', {
+      // const response = await fetch('http://localhost:8000/auth/register', {
       //   method: 'POST',
       //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify(formData)
@@ -53,6 +54,14 @@ export default function SignUpForm({ onBack, onSuccess }: SignUpFormProps) {
       ...prev,
       [e.target.name]: e.target.value
     }));
+  };
+
+  const handleLoginNavigation = () => {
+    if (onLogin) {
+      onLogin();
+      return;
+    }
+    onBack();
   };
 
   return (
@@ -170,7 +179,7 @@ export default function SignUpForm({ onBack, onSuccess }: SignUpFormProps) {
         <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-white text-center">
           Already have an account?{' '}
           <button
-            onClick={onBack}
+            onClick={handleLoginNavigation}
             className="text-[#f3ff00] hover:underline uppercase"
           >
             Login

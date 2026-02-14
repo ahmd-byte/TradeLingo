@@ -24,7 +24,7 @@ export default function LoginForm({ onBack, onSuccess }: LoginFormProps) {
 
     try {
       // TODO: Replace with actual FastAPI backend call
-      // const response = await fetch('YOUR_FASTAPI_URL/api/auth/login', {
+      // const response = await fetch('http://localhost:8000/auth/login', {
       //   method: 'POST',
       //   headers: { 'Content-Type': 'application/json' },
       //   body: JSON.stringify(formData)

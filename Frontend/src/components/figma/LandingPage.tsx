@@ -1,9 +1,10 @@
-import { useState } from 'react';
 import imgChatGptImageFeb72026034014Pm1 from "figma:asset/c47576d9fb019c19ae2380c4945c7cde9e97a55b.png";
 import { Button } from "../ui/button";
-import OnboardingFlow from "./OnboardingFlow";
-import SignUpForm from "./SignUpForm";
-import LoginForm from "./LoginForm";
+
+interface LandingPageProps {
+  onSignUpClick: () => void;
+  onLoginClick: () => void;
+}
 
 function HeroTitle() {
   return (
@@ -78,20 +79,6 @@ function Landing({ onSignUpClick, onLoginClick }: { onSignUpClick: () => void; o
   );
 }
 
-export default function LandingPage({ onComplete }: { onComplete: () => void }) {
-  const [currentScreen, setCurrentScreen] = useState<'landing' | 'signup' | 'login' | 'onboarding'>('landing');
-
-  if (currentScreen === 'onboarding') {
-    return <OnboardingFlow onComplete={onComplete} />;
-  }
-
-  if (currentScreen === 'signup') {
-    return <SignUpForm onBack={() => setCurrentScreen('landing')} onSuccess={() => setCurrentScreen('onboarding')} />;
-  }
-
-  if (currentScreen === 'login') {
-    return <LoginForm onBack={() => setCurrentScreen('landing')} onSuccess={onComplete} />;
-  }
-
-  return <Landing onSignUpClick={() => setCurrentScreen('signup')} onLoginClick={() => setCurrentScreen('login')} />;
+export default function LandingPage({ onSignUpClick, onLoginClick }: LandingPageProps) {
+  return <Landing onSignUpClick={onSignUpClick} onLoginClick={onLoginClick} />;
 }
