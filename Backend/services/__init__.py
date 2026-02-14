@@ -1,4 +1,4 @@
 """Services module - contains LLM and external service integrations."""
-from .llm_service import LLMService
+from .llm_service import LLMService, llm_service
 
-__all__ = ["LLMService"]
+__all__ = ["LLMService", "llm_service"]
