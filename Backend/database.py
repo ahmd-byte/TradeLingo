@@ -6,7 +6,6 @@ Async-compatible database setup using Motor (async MongoDB driver).
 import os
 import logging
 import certifi
-import ssl
 from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from dotenv import load_dotenv
@@ -15,8 +14,13 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # MongoDB connection settings
-MONGODB_URL = os.getenv("MONGODB_URL",)
-DATABASE_NAME = os.getenv("DATABASE_NAME",)
+MONGODB_URL = os.getenv("MONGODB_URL")
+DATABASE_NAME = os.getenv("DATABASE_NAME")
+
+if not MONGODB_URL:
+    raise RuntimeError("MONGODB_URL environment variable is required")
+if not DATABASE_NAME:
+    raise RuntimeError("DATABASE_NAME environment variable is required")
 
 # Global client and database instances
 client: AsyncIOMotorClient = None
@@ -35,7 +39,6 @@ async def connect_to_mongo():
             serverSelectionTimeoutMS=5000,
             tls=True,
             tlsCAFile=certifi.where(),
-            tlsAllowInvalidCertificates=True,
         )
         db = client[DATABASE_NAME]
         
