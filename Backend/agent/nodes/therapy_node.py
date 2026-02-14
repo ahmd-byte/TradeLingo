@@ -9,7 +9,7 @@ from prompts.therapy_prompt import build_therapy_prompt
 from services.llm_service import llm_service
 
 
-async def therapy_node(state: AgentState) -> AgentState:
+async def therapy_node(state: AgentState) -> dict:
     """
     Generate emotional wellness and psychology coaching.
 
@@ -22,33 +22,33 @@ async def therapy_node(state: AgentState) -> AgentState:
     Only runs if intent is 'therapy' or 'both'.
 
     Returns:
-        State with therapy_output populated
+        Dict with therapy_output populated
     """
 
     # Skip if intent is research-only
-    if state.intent == "research":
-        state.therapy_complete = True
-        return state
+    if state.get("intent") == "research":
+        return {"therapy_complete": True}
 
     try:
         # Load emotional patterns from memory
         emotional_patterns = []
-        if state.memory_doc:
-            emotional_patterns = state.memory_doc.get("emotional_patterns", [])
+        memory_doc = state.get("memory_doc")
+        if memory_doc:
+            emotional_patterns = memory_doc.get("emotional_patterns", [])
 
         # Build therapy prompt
         therapy_prompt = build_therapy_prompt(
-            user_message=state.user_message,
-            emotional_state=state.emotional_state,
+            user_message=state["user_message"],
+            emotional_state=state.get("emotional_state"),
             emotional_patterns=emotional_patterns,
-            user_profile=state.user_profile,
-            memory_doc=state.memory_doc,
+            user_profile=state.get("user_profile", {}),
+            memory_doc=memory_doc,
         )
 
         # Get wellness response from LLM
         response = await llm_service.call_gemini_json(therapy_prompt)
 
-        state.therapy_output = {
+        therapy_output = {
             "emotional_state": response.get("emotional_state"),
             "validation": response.get("validation"),
             "perspective": response.get("perspective"),
@@ -58,9 +58,8 @@ async def therapy_node(state: AgentState) -> AgentState:
             "encouragement": response.get("encouragement"),
         }
 
+        return {"therapy_output": therapy_output, "therapy_complete": True}
+
     except Exception as e:
         print(f"Therapy node error: {e}")
-        state.therapy_output = None
-
-    state.therapy_complete = True
-    return state
+        return {"therapy_output": None, "therapy_complete": True}

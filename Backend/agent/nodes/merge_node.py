@@ -7,7 +7,7 @@ Intelligently merges outputs from parallel research and therapy nodes.
 from agent.state import AgentState
 
 
-async def merge_node(state: AgentState) -> AgentState:
+async def merge_node(state: AgentState) -> dict:
     """
     Merge research and therapy outputs based on intent.
 
@@ -17,45 +17,49 @@ async def merge_node(state: AgentState) -> AgentState:
     - intent='both': Balanced integration of both modes
 
     Returns:
-        State with final_output populated
+        Dict with final_output populated
     """
 
-    if state.intent == "research":
+    intent = state.get("intent", "both")
+    research_output = state.get("research_output")
+    therapy_output = state.get("therapy_output")
+
+    if intent == "research":
         # Research-focused response
-        state.final_output = {
+        final_output = {
             "type": "educational",
-            **(state.research_output or {}),
+            **(research_output or {}),
             "wellness_support": (
-                state.therapy_output.get("coping_strategy")
-                if state.therapy_output
+                therapy_output.get("coping_strategy")
+                if therapy_output
                 else None
             ),
         }
 
-    elif state.intent == "therapy":
+    elif intent == "therapy":
         # Therapy-focused response
-        state.final_output = {
+        final_output = {
             "type": "wellness",
-            **(state.therapy_output or {}),
+            **(therapy_output or {}),
             "educational_focus": (
-                state.therapy_output.get("educational_focus")
-                if state.therapy_output
+                therapy_output.get("educational_focus")
+                if therapy_output
                 else None
             ),
             "related_concept": (
-                state.research_output.get("learning_concept")
-                if state.research_output
+                research_output.get("learning_concept")
+                if research_output
                 else None
             ),
         }
 
     else:  # "both"
         # Balanced - include both therapy and research
-        state.final_output = {
+        final_output = {
             "type": "integrated",
-            "primary_mode": "therapy" if state.emotional_state else "research",
-            "therapy": state.therapy_output,
-            "research": state.research_output,
+            "primary_mode": "therapy" if state.get("emotional_state") else "research",
+            "therapy": therapy_output,
+            "research": research_output,
         }
 
-    return state
+    return {"final_output": final_output}

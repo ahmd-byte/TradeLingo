@@ -15,8 +15,8 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # MongoDB connection settings
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
-DATABASE_NAME = os.getenv("DATABASE_NAME", "tradelingo")
+MONGODB_URL = os.getenv("MONGODB_URL",)
+DATABASE_NAME = os.getenv("DATABASE_NAME",)
 
 # Global client and database instances
 client: AsyncIOMotorClient = None

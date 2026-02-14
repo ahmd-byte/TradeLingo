@@ -45,9 +45,9 @@ def create_superbear_graph():
     # Conditional routing based on detected intent
     def route_based_on_intent(state: AgentState):
         """Route to research, therapy, or both based on detected intent."""
-        if state.intent == "research":
+        if state.get("intent") == "research":
             return ["research"]
-        elif state.intent == "therapy":
+        elif state.get("intent") == "therapy":
             return ["therapy"]
         else:  # "both"
             return ["research", "therapy"]

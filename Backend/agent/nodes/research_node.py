@@ -9,7 +9,7 @@ from prompts.research_prompt import build_research_prompt
 from services.llm_service import llm_service
 
 
-async def research_node(state: AgentState) -> AgentState:
+async def research_node(state: AgentState) -> dict:
     """
     Generate educational content on trading topics.
 
@@ -22,32 +22,32 @@ async def research_node(state: AgentState) -> AgentState:
     Only runs if intent is 'research' or 'both'.
 
     Returns:
-        State with research_output populated
+        Dict with research_output populated
     """
 
     # Skip if intent is therapy-only
-    if state.intent == "therapy":
-        state.research_complete = True
-        return state
+    if state.get("intent") == "therapy":
+        return {"research_complete": True}
 
     try:
         # Load memory context (concepts already taught)
         concepts_taught = []
-        if state.memory_doc:
-            concepts_taught = state.memory_doc.get("concepts_taught", [])
+        memory_doc = state.get("memory_doc")
+        if memory_doc:
+            concepts_taught = memory_doc.get("concepts_taught", [])
 
         # Build research prompt
         research_prompt = build_research_prompt(
-            user_message=state.user_message,
-            user_profile=state.user_profile,
+            user_message=state["user_message"],
+            user_profile=state.get("user_profile", {}),
             concepts_taught=concepts_taught,
-            memory_doc=state.memory_doc,
+            memory_doc=memory_doc,
         )
 
         # Get educational response from LLM
         response = await llm_service.call_gemini_json(research_prompt)
 
-        state.research_output = {
+        research_output = {
             "observation": response.get("observation"),
             "analysis": response.get("analysis"),
             "learning_concept": response.get("learning_concept"),
@@ -58,9 +58,8 @@ async def research_node(state: AgentState) -> AgentState:
             "next_learning_suggestion": response.get("next_learning_suggestion"),
         }
 
+        return {"research_output": research_output, "research_complete": True}
+
     except Exception as e:
         print(f"Research node error: {e}")
-        state.research_output = None
-
-    state.research_complete = True
-    return state
+        return {"research_output": None, "research_complete": True}

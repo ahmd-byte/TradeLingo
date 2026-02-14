@@ -59,9 +59,9 @@ async def test_state_creation():
         )
         
         print("✓ AgentState created successfully")
-        print(f"  User message: {state.user_message}")
-        print(f"  User ID: {state.user_id}")
-        print(f"  Session ID: {state.session_id}")
+        print(f"  User message: {state['user_message']}")
+        print(f"  User ID: {state['user_id']}")
+        print(f"  Session ID: {state['session_id']}")
         
         return True
     except Exception as e:
@@ -97,16 +97,16 @@ async def test_research_intent():
         print("✓ Executing research intent flow...")
         result = await graph.ainvoke(state)
         
-        print(f"  Intent detected: {result.intent}")
-        print(f"  Confidence: {result.confidence}")
+        print(f"  Intent detected: {result.get('intent')}")
+        print(f"  Confidence: {result.get('confidence')}")
         
-        if result.research_output:
+        if result.get('research_output'):
             print("✓ Research output generated")
-            print(f"  Keys in output: {list(result.research_output.keys())}")
+            print(f"  Keys in output: {list(result['research_output'].keys())}")
         
-        if result.final_output:
+        if result.get('final_output'):
             print("✓ Final output generated")
-            output_str = json.dumps(result.final_output, indent=2)[:200] + "..."
+            output_str = json.dumps(result['final_output'], indent=2)[:200] + "..."
             print(f"  Output preview: {output_str}")
         
         return True
@@ -143,15 +143,15 @@ async def test_therapy_intent():
         print("✓ Executing therapy intent flow...")
         result = await graph.ainvoke(state)
         
-        print(f"  Intent detected: {result.intent}")
-        print(f"  Emotional state: {result.emotional_state}")
-        print(f"  Confidence: {result.confidence}")
+        print(f"  Intent detected: {result.get('intent')}")
+        print(f"  Emotional state: {result.get('emotional_state')}")
+        print(f"  Confidence: {result.get('confidence')}")
         
-        if result.therapy_output:
+        if result.get('therapy_output'):
             print("✓ Therapy output generated")
-            print(f"  Keys in output: {list(result.therapy_output.keys())}")
+            print(f"  Keys in output: {list(result['therapy_output'].keys())}")
         
-        if result.final_output:
+        if result.get('final_output'):
             print("✓ Final output generated")
         
         return True
@@ -188,17 +188,17 @@ async def test_combined_intent():
         print("✓ Executing combined intent flow...")
         result = await graph.ainvoke(state)
         
-        print(f"  Intent detected: {result.intent}")
-        print(f"  Emotional state: {result.emotional_state}")
-        print(f"  Confidence: {result.confidence}")
+        print(f"  Intent detected: {result.get('intent')}")
+        print(f"  Emotional state: {result.get('emotional_state')}")
+        print(f"  Confidence: {result.get('confidence')}")
         
-        if result.research_output:
+        if result.get('research_output'):
             print("✓ Research component generated")
             
-        if result.therapy_output:
+        if result.get('therapy_output'):
             print("✓ Therapy component generated")
         
-        if result.final_output:
+        if result.get('final_output'):
             print("✓ Merged output generated successfully")
         
         return True

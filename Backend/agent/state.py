@@ -4,43 +4,39 @@ AgentState Definition for SuperBear LangGraph Workflow
 Shared state passed between all nodes in the graph.
 """
 
-from typing import Optional, List, Dict, Literal, Any
-from pydantic import BaseModel, Field
+from typing import Optional, Dict, Literal, Any, TypedDict
 
 
-class AgentState(BaseModel):
+class AgentState(TypedDict, total=False):
     """
     Shared state that flows through all nodes in the SuperBear graph.
-    Each node updates relevant fields and passes to next node.
+    Each node returns a dict of only the fields it updates.
     """
 
-    # Input
+    # Input (required)
     user_message: str
     user_id: str
     user_profile: Dict[str, Any]
 
     # Intent detection
-    intent: Literal["research", "therapy", "both"] = "both"
-    confidence: float = 0.0
-    emotional_state: Optional[str] = None  # "calm", "anxious", "frustrated", etc.
+    intent: Literal["research", "therapy", "both"]
+    confidence: float
+    emotional_state: Optional[str]  # "calm", "anxious", "frustrated", etc.
 
     # Research node output
-    research_output: Optional[Dict[str, Any]] = None
-    research_complete: bool = False
+    research_output: Optional[Dict[str, Any]]
+    research_complete: bool
 
     # Therapy node output
-    therapy_output: Optional[Dict[str, Any]] = None
-    therapy_complete: bool = False
+    therapy_output: Optional[Dict[str, Any]]
+    therapy_complete: bool
 
     # Memory
-    memory_doc: Optional[Dict] = None
+    memory_doc: Optional[Dict]
 
     # Final merged output
-    final_output: Optional[Dict[str, Any]] = None
+    final_output: Optional[Dict[str, Any]]
 
     # Metadata
     timestamp: str
     session_id: str
-
-    class Config:
-        arbitrary_types_allowed = True

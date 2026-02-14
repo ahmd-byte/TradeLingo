@@ -9,6 +9,7 @@ import json
 import os
 import re
 from google import genai
+from langsmith import wrappers
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -24,7 +25,17 @@ class LLMService:
     
     def __init__(self, api_key=None):
         self.api_key = api_key or GEMINI_API_KEY
-        self.client = genai.Client(api_key=self.api_key)
+        gemini_client = genai.Client(api_key=self.api_key)
+        # Wrap with LangSmith tracing
+        self.client = wrappers.wrap_gemini(
+            gemini_client,
+            tracing_extra={
+                "tags": ["gemini", "tradelingo"],
+                "metadata": {
+                    "integration": "google-genai",
+                },
+            },
+        )
         self.model = "gemini-2.5-flash-lite"
     
     def _extract_retry_delay(self, error_msg):

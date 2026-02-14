@@ -7,7 +7,7 @@ Validates and parses user input, extracts metadata.
 from agent.state import AgentState
 
 
-async def input_node(state: AgentState) -> AgentState:
+async def input_node(state: AgentState) -> dict:
     """
     Parse user input and extract metadata.
 
@@ -16,14 +16,12 @@ async def input_node(state: AgentState) -> AgentState:
     - Message content validation
 
     Returns:
-        Updated state ready for intent detection
+        Empty dict (no state changes needed)
     """
 
     # Validate message
-    if not state.user_message or len(state.user_message.strip()) < 3:
+    if not state.get("user_message") or len(state["user_message"].strip()) < 3:
         raise ValueError("Message too short. Please provide more context.")
 
-    # The message is valid - proceed to next node
-    # Any preprocessing can happen here
-
-    return state
+    # The message is valid - pass through the cleaned message
+    return {"user_message": state["user_message"].strip()}
