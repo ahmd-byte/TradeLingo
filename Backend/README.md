@@ -178,10 +178,10 @@ A demo user is pre-configured:
 
 | Field | Value |
 |---|---|
-| Email | `ahmadsyafi01@gmail.com` |
-| Password | `1234` |
+| Email | `demo@tradelingo.local` |
+| Password | `DemoPass123!` |
 
-> **Note:** Password hashing is disabled for demo mode (plain text comparison).
+> **Note:** Password hashing is only disabled when the `DEMO_MODE=true` environment variable is set (plain text comparison). In production, ensure `DEMO_MODE` is unset or `false` so that bcrypt hashing is enforced. To enable demo mode, add `DEMO_MODE=true` to your `.env` file.
 
 ---
 
