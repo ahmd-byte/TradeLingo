@@ -25,8 +25,8 @@ async def therapy_node(state: AgentState) -> AgentState:
         State with therapy_output populated
     """
 
-    # Skip if intent is research-only
-    if state.intent == "research":
+    # Skip if intent does not require therapy
+    if state.intent not in ("therapy", "emotional_support", "both"):
         state.therapy_complete = True
         return state
 

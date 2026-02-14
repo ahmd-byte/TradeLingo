@@ -68,8 +68,11 @@ async def register(request: UserRegisterRequest):
             "trading_level": request.trading_level,
             "learning_style": request.learning_style,
             "risk_tolerance": request.risk_tolerance,
-            "preferred_markets": "Stocks",
-            "trading_frequency": "weekly",
+            "preferred_market": request.preferred_market,
+            "trading_frequency": request.trading_frequency,
+            "trading_experience_years": request.trading_experience_years,
+            "trade_type": request.trade_type,
+            "has_connected_trades": request.has_connected_trades,
             "is_active": True,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc)

@@ -4,9 +4,19 @@ Pydantic models for data validation and serialization.
 """
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from typing import Optional, Any, Annotated
+from typing import Optional, Any, Annotated, Literal
 from datetime import datetime
 from bson import ObjectId
+
+
+PREFERRED_MARKET_VALUES = ("stocks", "forex", "crypto", "not_sure")
+TRADING_FREQUENCY_VALUES = (
+    "multiple_per_hour",
+    "daily",
+    "few_times_per_week",
+    "few_times_per_month",
+    "long_term",
+)
 
 
 class PyObjectId(str):
@@ -40,8 +50,11 @@ class UserInDB(BaseModel):
     trading_level: str = "beginner"
     learning_style: str = "visual"
     risk_tolerance: str = "medium"
-    preferred_markets: str = "Stocks"
-    trading_frequency: str = "weekly"
+    preferred_market: str = "stocks"
+    trading_frequency: str = "daily"
+    trading_experience_years: Optional[int] = None
+    trade_type: Optional[str] = None
+    has_connected_trades: bool = False
     is_active: bool = True
     created_at: datetime
     updated_at: datetime
@@ -66,8 +79,25 @@ class UserCreate(BaseModel):
     trading_level: Optional[str] = "beginner"
     learning_style: Optional[str] = "visual"
     risk_tolerance: Optional[str] = "medium"
-    preferred_markets: Optional[str] = "Stocks"
-    trading_frequency: Optional[str] = "weekly"
+    preferred_market: Optional[str] = Field("stocks", description="Preferred market")
+    trading_frequency: Optional[str] = Field("daily", description="Trading frequency")
+    trading_experience_years: Optional[int] = Field(None, ge=0, description="Years of trading experience")
+    trade_type: Optional[str] = None
+    has_connected_trades: bool = False
+
+    @field_validator("preferred_market")
+    @classmethod
+    def validate_preferred_market(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in PREFERRED_MARKET_VALUES:
+            raise ValueError(f"preferred_market must be one of {PREFERRED_MARKET_VALUES}")
+        return v
+
+    @field_validator("trading_frequency")
+    @classmethod
+    def validate_trading_frequency(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in TRADING_FREQUENCY_VALUES:
+            raise ValueError(f"trading_frequency must be one of {TRADING_FREQUENCY_VALUES}")
+        return v
 
 
 class UserUpdate(BaseModel):
@@ -76,8 +106,25 @@ class UserUpdate(BaseModel):
     trading_level: Optional[str] = None
     learning_style: Optional[str] = None
     risk_tolerance: Optional[str] = None
-    preferred_markets: Optional[str] = None
+    preferred_market: Optional[str] = None
     trading_frequency: Optional[str] = None
+    trading_experience_years: Optional[int] = Field(None, ge=0)
+    trade_type: Optional[str] = None
+    has_connected_trades: Optional[bool] = None
+
+    @field_validator("preferred_market")
+    @classmethod
+    def validate_preferred_market(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in PREFERRED_MARKET_VALUES:
+            raise ValueError(f"preferred_market must be one of {PREFERRED_MARKET_VALUES}")
+        return v
+
+    @field_validator("trading_frequency")
+    @classmethod
+    def validate_trading_frequency(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and v not in TRADING_FREQUENCY_VALUES:
+            raise ValueError(f"trading_frequency must be one of {TRADING_FREQUENCY_VALUES}")
+        return v
 
     class Config:
         # Exclude None values when converting to dict

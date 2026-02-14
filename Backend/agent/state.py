@@ -19,10 +19,17 @@ class AgentState(BaseModel):
     user_id: str
     user_profile: Dict[str, Any]
 
-    # Intent detection
-    intent: Literal["research", "therapy", "both"] = "both"
+    # Intent detection (expanded for curriculum-aware routing)
+    intent: str = "general_question"
     confidence: float = 0.0
     emotional_state: Optional[str] = None  # "calm", "anxious", "frustrated", etc.
+    detected_emotion: Optional[str] = None  # populated before intent classification
+
+    # Curriculum-aware context (loaded from MongoDB)
+    current_curriculum: Optional[Dict[str, Any]] = None
+    knowledge_gaps: Optional[Dict[str, Any]] = None
+    current_module: Optional[Dict[str, Any]] = None
+    trade_type: Optional[str] = None
 
     # Research node output
     research_output: Optional[Dict[str, Any]] = None

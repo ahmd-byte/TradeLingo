@@ -80,8 +80,14 @@ async def get_current_user(
                 detail="User account is inactive",
             )
         
-        # Convert to UserResponse
+        # Convert to UserResponse (with backward-compat defaults for old docs)
         user_doc_str_id = {**user_doc, "_id": str(user_doc["_id"])}
+        # Ensure new profiling fields have defaults for legacy documents
+        user_doc_str_id.setdefault("preferred_market", user_doc_str_id.pop("preferred_markets", "stocks"))
+        user_doc_str_id.setdefault("trading_frequency", "daily")
+        user_doc_str_id.setdefault("trading_experience_years", None)
+        user_doc_str_id.setdefault("trade_type", None)
+        user_doc_str_id.setdefault("has_connected_trades", False)
         return UserResponse(**user_doc_str_id)
         
     except ValueError:
@@ -154,6 +160,12 @@ async def get_optional_user(
         
         if user_doc and user_doc.get("is_active", False):
             user_doc_str_id = {**user_doc, "_id": str(user_doc["_id"])}
+            # Ensure new profiling fields have defaults for legacy documents
+            user_doc_str_id.setdefault("preferred_market", user_doc_str_id.pop("preferred_markets", "stocks"))
+            user_doc_str_id.setdefault("trading_frequency", "daily")
+            user_doc_str_id.setdefault("trading_experience_years", None)
+            user_doc_str_id.setdefault("trade_type", None)
+            user_doc_str_id.setdefault("has_connected_trades", False)
             return UserResponse(**user_doc_str_id)
         
         return None
