@@ -10,7 +10,7 @@ from typing import Optional
 from bson import ObjectId
 
 from database import get_database
-from auth.models import UserInDB, UserResponse
+from auth.models import UserResponse
 from auth.utils import decode_token, get_user_id_from_token
 
 logger = logging.getLogger(__name__)
