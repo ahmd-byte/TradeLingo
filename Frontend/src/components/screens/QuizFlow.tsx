@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import imgChatGptImageFeb72026034014Pm1 from "@/assets/mascotbear.png";
-import waveBearImage from "@/assets/bearwave.png";
-import chartImage from "@/assets/stockmarketsnip.png";
+import { useState, useEffect } from 'react';
+import mascotImage from '../../assets/mascot.png';
+import bearWavingImage from '../../assets/bear-waving.png';
+import chartImage from '../../assets/chart.png';
 import { Button } from "../ui/button";
 
 // Types
@@ -27,28 +27,21 @@ type TradingBehavior = {
   traits: string[];
 };
 
-// Trading Behavior Types
+// Trading Behavior Types - Four types: Scalper, Day Trading, Swing Trading, Investment Trading
 const tradingBehaviors: TradingBehavior[] = [
   {
-    id: 'day-trading',
-    name: 'Day Trading / Intraday',
+    id: 'scalper',
+    name: 'Scalper',
     emoji: '⚡',
-    description: 'You open and close trades within the same day. No overnight positions. You thrive on short timeframes and react to price movement and momentum.',
-    traits: ['High screen time', 'Fast decisions', 'Timing is everything']
+    description: 'You execute multiple quick trades throughout the day, holding positions for seconds to minutes. You thrive on fast execution and small, frequent profits.',
+    traits: ['Very high screen time', 'Lightning-fast decisions', 'Rapid fire trades']
   },
   {
-    id: 'technical-trading',
-    name: 'Technical Trading',
+    id: 'day-trading',
+    name: 'Day Trading',
     emoji: '📊',
-    description: 'You trade based on charts, indicators, and patterns. Support/resistance, RSI, and moving averages are your tools.',
-    traits: ['Rule-driven', 'Likes confirmations', 'Structure and patterns']
-  },
-  {
-    id: 'fundamental-trading',
-    name: 'Fundamental Trading',
-    emoji: '📰',
-    description: 'You trade based on news, macro events, and economic data. Interest rates, CPI, earnings—you look for the reasons behind price moves.',
-    traits: ['Patient approach', 'Less frequent trades', 'Context-driven']
+    description: 'You open and close trades within the same day. No overnight positions. You focus on intraday price movements and momentum.',
+    traits: ['High screen time', 'Fast decisions', 'Timing is everything']
   },
   {
     id: 'swing-trading',
@@ -56,6 +49,13 @@ const tradingBehaviors: TradingBehavior[] = [
     emoji: '📈',
     description: 'You hold trades for days to weeks, mixing technical analysis with some fundamentals. You focus on the bigger move and trend direction.',
     traits: ['Lower screen time', 'Selective entries', 'Discipline to hold']
+  },
+  {
+    id: 'investment-trading',
+    name: 'Investment Trading',
+    emoji: '💎',
+    description: 'You hold positions for weeks to months or longer. You focus on fundamental analysis, macro trends, and long-term value.',
+    traits: ['Minimal screen time', 'Patient approach', 'Big picture focus']
   }
 ];
 
@@ -135,9 +135,9 @@ function MascotTopLeft() {
   return (
     <div className="absolute top-6 left-6 w-[80px] h-[120px] rounded-[40px] overflow-hidden z-10">
       <img 
-        alt="LingoBear mascot" 
+        alt="SuperBear mascot" 
         className="w-full h-full object-cover" 
-        src={imgChatGptImageFeb72026034014Pm1} 
+        src={mascotImage} 
       />
     </div>
   );
@@ -269,66 +269,195 @@ function QuestionScreen({
 }
 
 function EndScreen({ onComplete, correctCount, totalCount }: { onComplete: () => void; correctCount: number; totalCount: number }) {
-  // For now, randomly select a trading behavior (later will be based on quiz answers)
-  const randomBehavior = tradingBehaviors[Math.floor(Math.random() * tradingBehaviors.length)];
+  const [animationStage, setAnimationStage] = useState<'analyzing' | 'cooking' | 'finalizing' | 'complete' | 'ready'>('analyzing');
+  const [progress, setProgress] = useState(0);
+  const [cookingText, setCookingText] = useState('Identifying knowledge gaps...');
   
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-8 py-12">
-      {/* Title */}
-      <div className="bg-transparent border-[4px] border-white rounded-[24px] px-12 py-4">
-        <p className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-white text-center uppercase tracking-wide">
-          Your Trading Behavior
-        </p>
-      </div>
+  const percentage = Math.round((correctCount / totalCount) * 100);
 
-      {/* Trading Type Reveal Card */}
-      <div className="bg-white border-[5px] border-black rounded-[24px] p-10 shadow-[12px_12px_0px_#000000] max-w-[700px] w-full">
-        <div className="flex flex-col items-center gap-5">
-          {/* Emoji Icon */}
-          <div className="text-[80px] leading-none">
-            {randomBehavior.emoji}
+  // Animation progression
+  useEffect(() => {
+    // Stage 1: Analyzing (2 seconds)
+    const timer1 = setTimeout(() => {
+      setAnimationStage('cooking');
+      setProgress(25);
+    }, 2000);
+
+    // Stage 2: Cooking - cycling text and progress (4 seconds total)
+    const timer2 = setTimeout(() => {
+      setCookingText('Selecting perfect lessons...');
+      setProgress(50);
+    }, 3000);
+
+    const timer3 = setTimeout(() => {
+      setCookingText('Crafting your learning path...');
+      setProgress(75);
+    }, 4500);
+
+    // Stage 3: Finalizing (2 seconds)
+    const timer4 = setTimeout(() => {
+      setAnimationStage('finalizing');
+      setCookingText('Adding final touches...');
+      setProgress(90);
+    }, 6000);
+
+    // Stage 4: Complete (1 second)
+    const timer5 = setTimeout(() => {
+      setAnimationStage('complete');
+      setProgress(100);
+    }, 8000);
+
+    // Stage 5: Ready - show button (0.5 seconds after complete)
+    const timer6 = setTimeout(() => {
+      setAnimationStage('ready');
+    }, 8500);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+      clearTimeout(timer4);
+      clearTimeout(timer5);
+      clearTimeout(timer6);
+    };
+  }, []);
+
+  // Calculate how many segments should be filled (out of 10)
+  const filledSegments = Math.floor((progress / 100) * 10);
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-8 py-12 relative overflow-hidden">
+      {/* Confetti effect when complete */}
+      {animationStage === 'complete' && (
+        <div className="absolute inset-0 pointer-events-none">
+          {[...Array(30)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-3 h-3 animate-confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: '-10%',
+                backgroundColor: ['#f3ff00', '#ff1814', '#3bd6ff', '#22c55e'][Math.floor(Math.random() * 4)],
+                animationDelay: `${Math.random() * 0.5}s`,
+                animationDuration: `${2 + Math.random() * 2}s`
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Stage 1: Analyzing - Score reveal */}
+      {animationStage === 'analyzing' && (
+        <div className="flex flex-col items-center gap-6 animate-fade-in">
+          {/* Bear thinking */}
+          <div className="text-[100px] animate-bounce-slow">
+            🤔
           </div>
           
-          {/* Type Name */}
-          <h2 className="font-['Arimo:Bold',sans-serif] font-bold text-[36px] text-black text-center uppercase tracking-wide leading-tight">
-            {randomBehavior.name}
-          </h2>
-          
-          {/* Description */}
-          <p className="font-['Arimo:Bold',sans-serif] font-bold text-[18px] text-black text-center leading-relaxed max-w-[600px]">
-            {randomBehavior.description}
+          {/* Quiz Score */}
+          <div className="bg-white/10 rounded-[20px] px-8 py-6 border-[3px] border-white/20 max-w-[600px] w-full animate-slide-up">
+            <h3 className="font-['Arimo:Bold',sans-serif] font-bold text-[32px] text-[#f3ff00] text-center mb-2">
+              {percentage}% Correct
+            </h3>
+            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[18px] text-white text-center">
+              {correctCount} out of {totalCount} questions
+            </p>
+          </div>
+
+          <p className="font-['Arimo:Bold',sans-serif] font-bold text-[24px] text-white text-center uppercase tracking-wide animate-pulse">
+            Analyzing your answers...
           </p>
-          
-          {/* Traits */}
-          <div className="flex flex-wrap justify-center gap-3 mt-2">
-            {randomBehavior.traits.map((trait, index) => (
-              <div 
-                key={index}
-                className="bg-[#f3ff00] border-[3px] border-black rounded-[16px] px-5 py-3"
-              >
-                <span className="font-['Arimo:Bold',sans-serif] font-bold text-[15px] text-black uppercase tracking-wide">
-                  {trait}
-                </span>
-              </div>
-            ))}
+        </div>
+      )}
+
+      {/* Stage 2 & 3: Cooking/Generating */}
+      {(animationStage === 'cooking' || animationStage === 'finalizing') && (
+        <div className="flex flex-col items-center gap-8 w-full max-w-[700px]">
+          {/* Cooking pot with bear */}
+          <div className="relative">
+            <div className="text-[120px] animate-cooking">
+              🍳
+            </div>
+            {/* Ingredients flying in */}
+            <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+              <div className="text-[40px] absolute top-0 left-[-20px] animate-ingredient-1">📊</div>
+              <div className="text-[40px] absolute top-0 right-[-20px] animate-ingredient-2">📈</div>
+              <div className="text-[40px] absolute bottom-0 left-[10px] animate-ingredient-3">💡</div>
+            </div>
+          </div>
+
+          {/* Bold Chunky Progress Bar */}
+          <div className="w-full">
+            <div className="flex gap-2 justify-center">
+              {[...Array(10)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-12 h-3 border-[3px] border-black rounded-[6px] transition-all duration-300 ${
+                    i < filledSegments 
+                      ? 'bg-[#f3ff00] shadow-[3px_3px_0px_#000000]' 
+                      : 'bg-white/20'
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[18px] text-[#f3ff00] text-center mt-3 uppercase tracking-wide">
+              {progress}%
+            </p>
+          </div>
+
+          {/* Dynamic text */}
+          <div className="bg-white/5 border-[3px] border-white/20 rounded-[20px] px-8 py-6 min-h-[100px] flex items-center justify-center">
+            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[24px] text-white text-center uppercase tracking-wide">
+              {cookingText}
+              {animationStage === 'finalizing' && <span className="inline-block animate-sparkle ml-2">✨</span>}
+            </p>
           </div>
         </div>
-      </div>
-      
-      {/* Quiz Score */}
-      <p className="font-['Arimo:Bold',sans-serif] font-bold text-[24px] text-[#f3ff00] uppercase tracking-wide">
-        Quiz Score: {correctCount}/{totalCount} correct
-      </p>
+      )}
 
-      {/* Start Button */}
-      <button
-        onClick={onComplete}
-        className="bg-white border-[5px] border-black rounded-[24px] px-16 py-6 shadow-[8px_8px_0px_#000000] hover:shadow-[4px_4px_0px_#000000] active:shadow-[1px_1px_0px_#000000] transition-all duration-150 max-w-[600px] w-full"
-      >
-        <span className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-black uppercase tracking-wide">
-          Start My Learning Path
-        </span>
-      </button>
+      {/* Stage 4 & 5: Complete + Ready */}
+      {(animationStage === 'complete' || animationStage === 'ready') && (
+        <div className="flex flex-col items-center gap-8 w-full max-w-[700px]">
+          {/* Success checkmark */}
+          <div className="text-[120px] animate-success-bounce">
+            ✓
+          </div>
+
+          {/* Success message */}
+          <div className="bg-transparent border-[4px] border-white rounded-[24px] px-12 py-4 animate-scale-in">
+            <p className="font-['Arimo:Bold',sans-serif] font-bold text-[32px] text-white text-center uppercase tracking-wide">
+              Lesson Plan Ready!
+            </p>
+          </div>
+
+          {/* Generated card */}
+          <div className="bg-white border-[5px] border-black rounded-[24px] p-8 shadow-[12px_12px_0px_#000000] w-full animate-scale-in-delayed">
+            <div className="flex flex-col items-center gap-4">
+              <div className="text-[60px] leading-none">
+                🐻✨
+              </div>
+              <h2 className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-black text-center uppercase tracking-wide leading-tight">
+                Your Personalized Path is Ready!
+              </h2>
+              <p className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-black text-center leading-relaxed">
+                SuperBear has crafted a custom learning journey based on your knowledge level and goals.
+              </p>
+            </div>
+          </div>
+
+          {/* Shaking CTA Button */}
+          {animationStage === 'ready' && (
+            <button
+              onClick={onComplete}
+              className="bg-[#22c55e] border-[5px] border-black rounded-[24px] px-16 py-6 shadow-[8px_8px_0px_#000000] hover:shadow-[12px_12px_0px_#000000] active:shadow-[4px_4px_0px_#000000] transition-all duration-150 max-w-[600px] w-full animate-shake-attention"
+            >
+              <span className="font-['Arimo:Bold',sans-serif] font-bold text-[32px] text-white uppercase tracking-wide">
+                Check It Out! 🚀
+              </span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -339,19 +468,19 @@ function QuizIntroScreen({ onStart, onBack }: { onStart: () => void; onBack?: ()
     <div className="flex flex-col items-center justify-center min-h-screen gap-12 px-8">
       {/* Title */}
       <h1 className="font-['Arimo:Bold',sans-serif] font-bold text-[72px] text-white text-center uppercase tracking-wide">
-        Quiz Time!
+        Diagnostic Quiz
       </h1>
 
       {/* Subtitle */}
       <p className="font-['Arimo:Bold',sans-serif] font-bold text-[24px] text-[#f3ff00] text-center uppercase tracking-wide max-w-[700px] leading-relaxed">
-        Let's test your trading knowledge.<br />
+        Let's assess what you know.<br />
         We'll craft your personalized lesson plan.
       </p>
 
       {/* Waving Bear */}
       <div className="w-[300px] h-[300px] flex items-center justify-center">
         <img 
-          src={waveBearImage} 
+          src={bearWavingImage} 
           alt="Waving Bear" 
           className="w-full h-full object-contain"
         />
@@ -472,7 +601,7 @@ export default function QuizFlow({ onComplete, onBackToOnboarding }: { onComplet
   // Show intro screen first
   if (showIntro) {
     return (
-      <div className="bg-[#ff1814] min-h-screen w-full relative">
+      <div className="bg-[var(--bg-primary)] min-h-screen w-full relative">
         <QuizIntroScreen 
           onStart={() => setShowIntro(false)} 
           onBack={onBackToOnboarding}
@@ -484,7 +613,7 @@ export default function QuizFlow({ onComplete, onBackToOnboarding }: { onComplet
   // Show end screen when quiz is complete
   if (showEndScreen) {
     return (
-      <div className="bg-[#ff1814] min-h-screen w-full relative">
+      <div className="bg-[var(--bg-primary)] min-h-screen w-full relative">
         <EndScreen onComplete={onComplete} correctCount={correctCount} totalCount={quizQuestions.length} />
       </div>
     );
@@ -492,7 +621,7 @@ export default function QuizFlow({ onComplete, onBackToOnboarding }: { onComplet
 
   // Show quiz questions
   return (
-    <div className="bg-[#ff1814] min-h-screen w-full relative">
+    <div className="bg-[var(--bg-primary)] min-h-screen w-full relative">
       <ProgressBar progress={progress} />
       <MascotTopLeft />
       <StreakIndicator correctStreak={correctStreak} wrongStreak={wrongStreak} />

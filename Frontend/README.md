@@ -1,43 +1,130 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React" />
-  <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Vite-6.3-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
-  <img src="https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind" />
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License" />
-</p>
+# SuperBear Trading Education
 
-# 🐻 TradeLingo Frontend — Gamified Trading Education
+A gamified trading education platform with AI-powered personalized learning.
 
-> A bold, gamified trading education interface built with React and Tailwind CSS. Designed with a playful, comic-book aesthetic featuring SuperBear — your AI-powered trading tutor.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![React](https://img.shields.io/badge/React-18.3.1-blue)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6.2-blue)](https://www.typescriptlang.org/)
 
 ---
 
-## ✨ Features
+## 📋 Table of Contents
 
-| Feature | Description |
-|---|---|
-| 🎯 **Learning Path** | Duolingo-style lesson progression with XP, milestones, and locked levels |
-| 🐻 **SuperBear AI Chat** | Interactive AI tutor powered by Gemini — ask any trading question |
-| 🧠 **Trading Therapy** | Guided self-reflection on trading habits and emotions |
-| 🔥 **Streaks** | Track your daily learning streaks to build consistency |
-| 👤 **User Profile** | Personalized trading profile with learning preferences |
-| 🎨 **Onboarding Flow** | Step-by-step user profiling to personalize the experience |
-| 📊 **Quiz System** | Test your trading knowledge with interactive quizzes |
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Getting Started](#-getting-started)
+- [GitHub Upload](#-github-upload)
+- [Documentation](#-documentation)
+- [Project Structure](#-project-structure)
 
 ---
 
-## 🖼️ Pages & Navigation
+## 🎯 Features
 
+- **Personalized Learning Paths** - AI-driven adaptive learning based on trading style
+- **Gamification** - XP, levels, streaks, and achievements
+- **SuperBear AI Companion** - Trading coach and emotional support
+- **Deriv Integration** - Connect real trading account for personalized insights
+- **Interactive Quizzes** - Diagnostic and lesson-based assessments
+- **Beautiful UI** - Bold, game-like design with smooth animations
+
+---
+
+## 🛠 Tech Stack
+
+- **Framework**: React 18.3.1 + TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **UI Components**: Radix UI + shadcn/ui
+- **Icons**: Lucide React
+- **HTTP Client**: Axios
+- **Routing**: React Router DOM
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- Git (for cloning)
+
+### Installation
+
+1. **Clone the repository** (or download the code):
+   ```bash
+   git clone https://github.com/ahmd-byte/TradeLingo.git
+   cd TradeLingo/frontend
+   ```
+
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+   This will download all required packages (~200-300 MB). Takes 5-10 minutes.
+
+3. **Run development server**:
+   ```bash
+   npm run dev
+   ```
+
+4. **Open in browser**:
+   Navigate to `http://localhost:5173`
+
+### Build for Production
+
+```bash
+npm run build
 ```
-Landing Page (/)
-  └── Onboarding Flow → User Profiling
-        └── Dashboard (/dashboard/*)
-              ├── /learn          → Lesson Path (Duolingo-style)
-              ├── /therapy        → Trading Therapy
-              ├── /superbear      → SuperBear AI Chat
-              ├── /streaks        → Streak Tracker
-              └── /profile        → User Profile
+
+Output will be in the `dist/` folder.
+
+---
+
+## 📤 GitHub Upload
+
+### For Repository Maintainers
+
+To upload this frontend to the `sarvind2` branch on GitHub:
+
+#### Option 1: Automated Script (Recommended)
+
+```powershell
+.\upload-to-github.ps1
 ```
+
+Follow the prompts. The script will guide you through the entire process.
+
+#### Option 2: Manual Upload
+
+See detailed instructions in **[GITHUB_UPLOAD_GUIDE.md](./GITHUB_UPLOAD_GUIDE.md)**
+
+#### What Gets Uploaded
+
+✅ **Included** (~5-15 MB):
+- Source code (`src/`)
+- `package.json` and `package-lock.json`
+- Configuration files
+- Documentation
+
+❌ **Excluded** (via `.gitignore`):
+- `node_modules/` (200+ MB)
+- `dist/` (build output)
+- `.env` files
+- Editor settings
+
+Team members will run `npm install` to download packages locally.
+
+---
+
+## 📚 Documentation
+
+- **[FRONTEND_GUIDE.md](./FRONTEND_GUIDE.md)** - Complete frontend architecture and features
+- **[BACKEND_INTEGRATION.md](./BACKEND_INTEGRATION.md)** - API integration guide
+- **[GITHUB_UPLOAD_GUIDE.md](./GITHUB_UPLOAD_GUIDE.md)** - Step-by-step upload instructions
+- **[INTEGRATION_SUMMARY.md](./INTEGRATION_SUMMARY.md)** - Integration overview
+- **[src/SETUP_GUIDE.md](./src/SETUP_GUIDE.md)** - Animation and styling setup
+- **[src/ANIMATION_REFERENCE.md](./src/ANIMATION_REFERENCE.md)** - Animation implementation details
 
 ---
 
@@ -46,146 +133,105 @@ Landing Page (/)
 ```
 frontend/
 ├── src/
-│   ├── App.tsx                      # Router & route definitions
-│   ├── main.tsx                     # Entry point
-│   ├── index.css                    # Global styles
-│   │
 │   ├── components/
-│   │   ├── figma/                   # 🎨 Main application components
-│   │   │   ├── LandingPage.tsx      # Landing page with hero & CTA
-│   │   │   ├── OnboardingFlow.tsx   # Multi-step onboarding wizard
-│   │   │   ├── UserProfiling.tsx    # Trading profile questionnaire
-│   │   │   ├── Dashboard.tsx        # Main dashboard layout & navigation
-│   │   │   ├── LessonFlow.tsx       # Lesson content & quiz flow
-│   │   │   ├── QuizFlow.tsx         # Interactive quiz component
-│   │   │   ├── SuperBear.tsx        # 🐻 AI chat interface (center)
-│   │   │   ├── SuperBearRightPanel.tsx  # AI response details panel
-│   │   │   ├── TradingTherapy.tsx   # Trading therapy module
-│   │   │   ├── StreaksCenter.tsx     # Streak display (center)
-│   │   │   ├── StreaksRightPanel.tsx # Streak details panel
-│   │   │   ├── ProfileCenter.tsx    # Profile display (center)
-│   │   │   ├── ProfileRightPanel.tsx # Profile details panel
-│   │   │   └── ImageWithFallback.tsx # Utility image component
-│   │   │
-│   │   └── ui/                      # 🧩 Reusable Radix UI components
-│   │       ├── button.tsx
-│   │       ├── card.tsx
-│   │       ├── dialog.tsx
-│   │       ├── progress.tsx
-│   │       └── ... (30+ components)
-│   │
-│   ├── assets/                      # Images & static assets
-│   └── styles/                      # Additional stylesheets
-│
-├── vite.config.ts                   # Vite config with proxy to backend
-├── tailwind.config.js               # Tailwind CSS configuration
-├── tsconfig.json                    # TypeScript configuration
-├── package.json                     # Dependencies & scripts
-└── README.md                        # You are here
+│   │   ├── screens/          # Main application screens
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── BranchingRail.tsx
+│   │   │   ├── LessonFlow.tsx
+│   │   │   ├── QuizFlow.tsx
+│   │   │   └── ...
+│   │   └── ui/               # Reusable UI components
+│   ├── contexts/             # React contexts (Auth, etc.)
+│   ├── hooks/                # Custom React hooks
+│   ├── services/             # API services
+│   ├── types/                # TypeScript type definitions
+│   ├── utils/                # Utility functions
+│   ├── assets/               # Images and static files
+│   └── styles/               # Global CSS and animations
+├── package.json
+├── vite.config.ts
+├── tsconfig.json
+└── .gitignore
+
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🔐 Environment Variables
 
-### Prerequisites
+Create a `.env` file in the root:
 
-- **Node.js 18+**
-- **npm** or **yarn**
-
-### 1. Navigate to Frontend
-
-```bash
-cd frontend
+```env
+VITE_API_BASE_URL=http://localhost:8000/api
+VITE_APP_NAME=SuperBear
+VITE_APP_ENV=development
 ```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Start Development Server
-
-```bash
-npm run dev
-```
-
-The app will open at **http://localhost:3000**.
-
-> **Note:** The Vite dev server proxies `/api/*` requests to `http://localhost:5000` (the Flask backend). Make sure the backend is running for AI chat features to work.
-
-### 4. Build for Production
-
-```bash
-npm run build
-```
-
-Output will be in the `build/` directory.
 
 ---
 
-## 🔌 Backend Integration
+## 🤝 Contributing
 
-The frontend communicates with the Flask backend via a Vite proxy:
+1. Create a new branch from `sarvind2`:
+   ```bash
+   git checkout sarvind2
+   git pull origin sarvind2
+   git checkout -b feature/your-feature-name
+   ```
 
-```typescript
-// vite.config.ts
-server: {
-  proxy: {
-    '/api': {
-      target: 'http://localhost:5000',
-      changeOrigin: true,
-    },
-  },
-}
+2. Make your changes
+
+3. Commit and push:
+   ```bash
+   git add .
+   git commit -m "Description of changes"
+   git push origin feature/your-feature-name
+   ```
+
+4. Create a Pull Request to `sarvind2`
+
+---
+
+## 📦 Available Scripts
+
+```bash
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
 ```
-
-### API Calls
-
-| Component | Endpoint | Purpose |
-|---|---|---|
-| **SuperBear** | `POST /api/chat` | Send messages to the AI tutor |
-| **Health Check** | `GET /api/health` | Verify backend connectivity |
 
 ---
 
 ## 🎨 Design System
 
-The UI follows a **bold, comic-book inspired** design language:
-
-- **Colors:** Dark theme (`#1a1a1a`) with red (`#ff1814`), yellow (`#f3ff00`), and white accents
-- **Borders:** Thick black borders (`3-5px`) with offset shadows (`shadow-[6px_6px_0px_#000]`)
-- **Typography:** Arimo Bold font, uppercase headings, chunky text
-- **Components:** Radix UI primitives styled with Tailwind CSS
-- **Animations:** Fade-ins, typewriter effects, bounce animations
+- **Colors**: Red (#FF1814), Yellow (#F3FF00), Cyan (#3BD6FF), Black, White
+- **Font**: Arimo Bold
+- **Style**: Flat 2D with offset shadows
+- **Animations**: 40+ custom keyframe animations
 
 ---
 
-## 🛠️ Tech Stack
+## 📝 License
 
-| Technology | Purpose |
-|---|---|
-| **React 18** | UI framework |
-| **TypeScript** | Type safety |
-| **Vite 6** | Build tool & dev server |
-| **Tailwind CSS 3** | Utility-first styling |
-| **Radix UI** | Accessible UI primitives |
-| **React Router 7** | Client-side routing |
-| **Lucide React** | Icon library |
-| **Recharts** | Data visualization |
+This project is licensed under the MIT License.
 
 ---
 
-## 📜 Available Scripts
+## 🆘 Support
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start dev server on port 3000 |
-| `npm run build` | Build for production |
+For issues or questions:
+1. Check the documentation files
+2. Review the troubleshooting section in [GITHUB_UPLOAD_GUIDE.md](./GITHUB_UPLOAD_GUIDE.md)
+3. Contact the development team
 
 ---
 
-## 📄 License
+## ✨ Credits
 
-This project is part of the **TradeLingo** platform.
+- UI Components: [shadcn/ui](https://ui.shadcn.com/)
+- Icons: [Lucide](https://lucide.dev/)
+- Images: [Unsplash](https://unsplash.com)
+
+---
+
+**Made with ❤️ by the SuperBear Team**

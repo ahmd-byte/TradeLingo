@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import imgChatGptImageFeb72026034014Pm1 from "@/assets/mascotbear.png";
+import mascotImage from '../../assets/mascot.png';
 import { Button } from "../ui/button";
 
 // Types
@@ -73,9 +73,9 @@ function MascotTopLeft() {
   return (
     <div className="absolute top-6 left-6 w-[80px] h-[120px] rounded-[40px] overflow-hidden z-10">
       <img 
-        alt="LingoBear mascot" 
+        alt="SuperBear mascot" 
         className="w-full h-full object-cover" 
-        src={imgChatGptImageFeb72026034014Pm1} 
+        src={mascotImage} 
       />
     </div>
   );
@@ -90,7 +90,7 @@ function StreakIndicator({ correctStreak, wrongStreak }: { correctStreak: number
   return (
     <div className="absolute top-6 right-6 z-10">
       {isOnFire && (
-        <div className="bg-[#ff1814] border-[3px] border-black rounded-[12px] px-4 py-2 shadow-[4px_4px_0px_#000000]">
+        <div className="bg-[#feb2f0] border-[3px] border-black rounded-[12px] px-4 py-2 shadow-[4px_4px_0px_#000000]">
           <span className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-[#f3ff00] uppercase tracking-wide">
             🔥 ON FIRE!
           </span>
@@ -202,15 +202,17 @@ function CompletionScreen({
   const percentage = Math.round((correctCount / totalCount) * 100);
   
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-8 px-8 py-12 overflow-y-auto hide-scrollbar">
-      <div className="w-[200px] h-[300px] rounded-[100px] overflow-hidden">
+    <div className="flex items-center justify-center h-full gap-12 px-8 py-12 overflow-y-auto hide-scrollbar relative">
+      {/* Bear on the left */}
+      <div className="w-[200px] h-[300px] rounded-[100px] overflow-hidden border-[5px] border-black shadow-[8px_8px_0px_#000000] flex-shrink-0">
         <img 
-          alt="LingoBear mascot" 
+          alt="SuperBear mascot" 
           className="w-full h-full object-cover" 
-          src={imgChatGptImageFeb72026034014Pm1} 
+          src={mascotImage} 
         />
       </div>
 
+      {/* Content on the right */}
       <div className="flex flex-col items-center gap-6 max-w-[650px]">
         {/* Title */}
         <div className="bg-transparent border-[3px] border-white rounded-[20px] px-8 py-4">
@@ -334,7 +336,7 @@ export default function LessonFlow({
   }
 
   return (
-    <div className="bg-[#ff1814] h-full w-full relative">
+    <div className="bg-[var(--bg-primary)] h-full w-full relative">
       <ProgressBar progress={progress} />
       <MascotTopLeft />
       <StreakIndicator correctStreak={correctStreak} wrongStreak={wrongStreak} />

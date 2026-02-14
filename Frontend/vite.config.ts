@@ -17,12 +17,7 @@
         'next-themes@0.4.6': 'next-themes',
         'lucide-react@0.487.0': 'lucide-react',
         'input-otp@1.4.2': 'input-otp',
-        'figma:asset/d70baeb329438db450b57deadd82b6c061377d05.png': path.resolve(__dirname, './src/assets/d70baeb329438db450b57deadd82b6c061377d05.png'),
-        'figma:asset/c47576d9fb019c19ae2380c4945c7cde9e97a55b.png': path.resolve(__dirname, './src/assets/c47576d9fb019c19ae2380c4945c7cde9e97a55b.png'),
-        'figma:asset/8adb0b3f526f6a4651ba2ba39730f80958c50632.png': path.resolve(__dirname, './src/assets/8adb0b3f526f6a4651ba2ba39730f80958c50632.png'),
-        'figma:asset/7ed597cb08cb24aaa452f4146ff3f118bd3b20b8.png': path.resolve(__dirname, './src/assets/7ed597cb08cb24aaa452f4146ff3f118bd3b20b8.png'),
-        'figma:asset/789c2c0c2a8de258540ceea8886d63826611f10a.png': path.resolve(__dirname, './src/assets/789c2c0c2a8de258540ceea8886d63826611f10a.png'),
-        'figma:asset/0190d5064779e34c50ff7ec67d9155ba71a49748.png': path.resolve(__dirname, './src/assets/0190d5064779e34c50ff7ec67d9155ba71a49748.png'),
+        '@assets': path.resolve(__dirname, './src/assets'),
         'embla-carousel-react@8.6.0': 'embla-carousel-react',
         'cmdk@1.1.1': 'cmdk',
         'class-variance-authority@0.7.1': 'class-variance-authority',
@@ -62,11 +57,5 @@
     server: {
       port: 3000,
       open: true,
-      proxy: {
-        '/api': {
-          target: 'http://localhost:5000',
-          changeOrigin: true,
-        },
-      },
     },
   });

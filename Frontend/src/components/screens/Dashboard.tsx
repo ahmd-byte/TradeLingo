@@ -1,8 +1,6 @@
-import { useState } from 'react';
-import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
-import mascotImage from "@/assets/mascotbear.png";
-import { Book, Brain, Sparkles, Flame, User, Lock, Trophy, Star } from 'lucide-react';
-import TradingTherapy from './TradingTherapy';
+import { useState, useEffect } from 'react';
+import mascotImage from '../../assets/mascot.png';
+import { Book, Sparkles, Flame, User, Lock, Trophy, Star } from 'lucide-react';
 import SuperBear from './SuperBear';
 import SuperBearRightPanel from './SuperBearRightPanel';
 import StreaksCenter from './StreaksCenter';
@@ -10,6 +8,7 @@ import StreaksRightPanel from './StreaksRightPanel';
 import ProfileCenter from './ProfileCenter';
 import ProfileRightPanel from './ProfileRightPanel';
 import LessonFlow from './LessonFlow';
+import BranchingRailCenter from './BranchingRail';
 
 // Types
 type LessonNode = {
@@ -33,30 +32,22 @@ const lessonPath: LessonNode[] = [
 
 // Components
 function LeftNavigation({ activeTab, onTabChange }: { activeTab: string; onTabChange: (tab: string) => void }) {
-  const navigate = useNavigate();
-  
   const navItems = [
-    { id: 'learn', label: 'Learn', icon: Book, path: '/dashboard/learn' },
-    { id: 'therapy', label: 'Trading Therapy', icon: Brain, path: '/dashboard/therapy' },
-    { id: 'superbear', label: 'SuperBear', icon: Sparkles, path: '/dashboard/superbear' },
-    { id: 'streaks', label: 'Streaks', icon: Flame, path: '/dashboard/streaks' },
-    { id: 'profile', label: 'Profile', icon: User, path: '/dashboard/profile' },
+    { id: 'learn', label: 'Learn', icon: Book },
+    { id: 'superbear', label: 'SuperBear', icon: Sparkles },
+    { id: 'streaks', label: 'Streaks', icon: Flame },
+    { id: 'profile', label: 'Profile', icon: User },
   ];
-
-  const handleNavClick = (item: typeof navItems[0]) => {
-    navigate(item.path);
-    onTabChange(item.id);
-  };
 
   return (
     <div className="w-[200px] bg-black border-r-[3px] border-white/20 h-screen flex flex-col p-6 gap-8">
       {/* Logo */}
-      <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/')}>
+      <div className="flex items-center gap-2">
         <div className="w-[40px] h-[40px] bg-[#f3ff00] rounded-full border-[3px] border-black flex items-center justify-center">
-          <span className="font-['Arimo:Bold',sans-serif] font-bold text-[20px] text-black">T</span>
+          <span className="font-['Arimo:Bold',sans-serif] font-bold text-[20px] text-black">S</span>
         </div>
         <span className="font-['Arimo:Bold',sans-serif] font-bold text-[18px] text-white uppercase">
-          TradeLingo
+          SuperBear
         </span>
       </div>
 
@@ -69,10 +60,10 @@ function LeftNavigation({ activeTab, onTabChange }: { activeTab: string; onTabCh
           return (
             <button
               key={item.id}
-              onClick={() => handleNavClick(item)}
+              onClick={() => onTabChange(item.id)}
               className={`flex items-center gap-3 px-4 py-3 rounded-[12px] border-[3px] transition-all ${
                 isActive
-                  ? 'bg-[#ff1814] border-white text-white'
+                  ? 'bg-[var(--bg-primary)] border-white text-white'
                   : 'bg-transparent border-transparent text-white/60 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -114,7 +105,7 @@ function CenterLearningPath({ onXPEarned }: { onXPEarned: (amount: number) => vo
   // Show lesson flow if started
   if (startedLesson) {
     return (
-      <div className="flex-1 h-screen overflow-y-auto hide-scrollbar bg-[#ff1814]">
+      <div className="flex-1 h-screen overflow-y-auto hide-scrollbar bg-[var(--bg-primary)]">
         <LessonFlow 
           onComplete={handleLessonComplete}
           onBack={handleLessonBack}
@@ -127,9 +118,9 @@ function CenterLearningPath({ onXPEarned }: { onXPEarned: (amount: number) => vo
   }
 
   return (
-    <div className="flex-1 h-screen overflow-y-auto hide-scrollbar bg-[#ff1814]">
+    <div className="flex-1 h-screen overflow-y-auto hide-scrollbar bg-[var(--bg-primary)]">
       {/* Sticky Header - Floating with background shield */}
-      <div className="sticky top-0 z-[100] pt-4 pb-8 bg-gradient-to-b from-[#ff1814] via-[#ff1814] to-transparent">
+      <div className="sticky top-0 z-[100] pt-4 pb-8 bg-gradient-to-b from-[var(--bg-primary)] via-[var(--bg-primary)] to-transparent">
         <div className="flex justify-center px-8">
           <div className="bg-[#22c55e] border-[3px] border-black rounded-[16px] px-6 py-3 flex items-center justify-between gap-6 shadow-[4px_4px_0px_#000000] max-w-[600px] w-full">
             <div className="flex flex-col gap-0">
@@ -172,7 +163,7 @@ function CenterLearningPath({ onXPEarned }: { onXPEarned: (amount: number) => vo
                 <div className="w-[120px] h-[180px] rounded-[60px] overflow-hidden border-[5px] border-black shadow-[8px_8px_0px_#000000]">
                   <img 
                     src={mascotImage} 
-                    alt="LingoBear" 
+                    alt="SuperBear" 
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -245,7 +236,7 @@ function LessonNodeComponent({
       return <Lock size={36} strokeWidth={3} className="text-white" />;
     }
     if (node.type === 'milestone') {
-      return <Trophy size={36} strokeWidth={3} className="text-[#ff1814]" />;
+      return <Trophy size={36} strokeWidth={3} className="text-[var(--bg-primary)]" />;
     }
     if (node.status === 'completed') {
       return <Star size={36} strokeWidth={3} className="text-white" fill="white" />;
@@ -301,7 +292,7 @@ function GuidePopup({ onClose }: { onClose: () => void }) {
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 w-[40px] h-[40px] bg-[#ff1814] border-[3px] border-black rounded-full flex items-center justify-center shadow-[4px_4px_0px_#000000] hover:shadow-[2px_2px_0px_#000000] active:shadow-[1px_1px_0px_#000000] transition-all"
+          className="absolute top-6 right-6 w-[40px] h-[40px] bg-[var(--bg-primary)] border-[3px] border-black rounded-full flex items-center justify-center shadow-[4px_4px_0px_#000000] hover:shadow-[2px_2px_0px_#000000] active:shadow-[1px_1px_0px_#000000] transition-all"
         >
           <span className="font-['Arimo:Bold',sans-serif] font-bold text-[20px] text-white leading-none">✕</span>
         </button>
@@ -322,7 +313,7 @@ function GuidePopup({ onClose }: { onClose: () => void }) {
               What is XP?
             </h3>
             <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-black/70 leading-relaxed">
-              XP (Experience Points) tracks your learning progress in TradeLingo. Earn XP to level up your trading knowledge and compete on the leaderboard!
+              XP (Experience Points) tracks your learning progress in SuperBear. Earn XP to level up your trading knowledge and compete on the leaderboard!
             </p>
           </div>
 
@@ -332,7 +323,7 @@ function GuidePopup({ onClose }: { onClose: () => void }) {
               How it Works
             </h3>
             <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-black/70 leading-relaxed">
-              Your XP is tracked in two ways: <span className="text-[#22c55e]">Daily XP</span> (resets each day with a goal of 20 XP) and <span className="text-[#ff1814]">Total XP</span> (your lifetime score shown on the leaderboard).
+              Your XP is tracked in two ways: <span className="text-[#22c55e]">Daily XP</span> (resets each day with a goal of 20 XP) and <span className="text-[var(--bg-primary)]">Total XP</span> (your lifetime score shown on the leaderboard).
             </p>
           </div>
 
@@ -371,7 +362,7 @@ function GuidePopup({ onClose }: { onClose: () => void }) {
               </div>
 
               <div className="flex items-start gap-3">
-                <div className="w-[32px] h-[32px] bg-[#ff1814] border-[2px] border-black rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-[32px] h-[32px] bg-[var(--bg-primary)] border-[2px] border-black rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-white">🔥</span>
                 </div>
                 <div>
@@ -401,12 +392,86 @@ function GuidePopup({ onClose }: { onClose: () => void }) {
   );
 }
 
-function RightPanel({ dailyXP, totalXP }: { dailyXP: number; totalXP: number }) {
+function RightPanel({ dailyXP, totalXP, isCollapsed, onToggleCollapse }: { 
+  dailyXP: number; 
+  totalXP: number;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
+}) {
   const dailyGoal = 20;
   const progressPercentage = (dailyXP / dailyGoal) * 100;
   
+  if (isCollapsed) {
+    // Collapsed state - Icon strip
+    return (
+      <div className="w-[64px] bg-white/5 border-l-[3px] border-white/20 h-screen flex flex-col items-center py-6 gap-6 transition-all duration-[250ms] ease-in-out">
+        {/* Expand Toggle */}
+        <button
+          onClick={onToggleCollapse}
+          className="w-[44px] h-[44px] bg-white border-[3px] border-black rounded-full flex items-center justify-center hover:bg-[#f3ff00] transition-all duration-200 shadow-[2px_2px_0px_#000000]"
+          title="Expand Panel"
+        >
+          <span className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-black">◂</span>
+        </button>
+
+        {/* Icon Stack */}
+        <div className="flex flex-col items-center gap-6 mt-6">
+          {/* Daily Goal Icon */}
+          <button
+            className="w-[44px] h-[44px] bg-white border-[3px] border-black rounded-full flex items-center justify-center hover:bg-[#f3ff00] transition-all duration-200 shadow-[2px_2px_0px_#000000] group relative"
+            title="Daily Goal"
+          >
+            <span className="text-[20px]">📊</span>
+          </button>
+
+          {/* Streak Icon */}
+          <button
+            className="w-[44px] h-[44px] bg-white border-[3px] border-black rounded-full flex items-center justify-center hover:bg-[#f3ff00] transition-all duration-200 shadow-[2px_2px_0px_#000000] group relative"
+            title="Streak"
+          >
+            <Flame size={24} strokeWidth={3} className="text-black" />
+          </button>
+
+          {/* Leaderboard Icon */}
+          <button
+            className="w-[44px] h-[44px] bg-white border-[3px] border-black rounded-full flex items-center justify-center hover:bg-[#f3ff00] transition-all duration-200 shadow-[2px_2px_0px_#000000] group relative"
+            title="Leaderboard"
+          >
+            <Trophy size={24} strokeWidth={3} className="text-black" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Expanded state - Full cards
   return (
-    <div className="w-[300px] bg-white/5 border-l-[3px] border-white/20 h-screen overflow-y-auto p-6">
+    <div className="w-[360px] bg-white/5 border-l-[3px] border-white/20 h-screen overflow-y-auto p-6 transition-all duration-[250ms] ease-in-out">
+      {/* Collapse Toggle */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={onToggleCollapse}
+          className="bg-white border-[3px] border-black rounded-[12px] px-4 py-2 hover:bg-[#f3ff00] transition-all duration-200 shadow-[2px_2px_0px_#000000] hover:shadow-[1px_1px_0px_#000000]"
+        >
+          <span className="font-['Arimo:Bold',sans-serif] font-bold text-[11px] text-black uppercase tracking-wide">
+            Collapse ▸
+          </span>
+        </button>
+      </div>
+
+      {/* Color Palette Switcher */}
+      <div className="flex justify-center gap-2 mb-8">
+        {["#f570dc", "#3bd6ff", "#ff3131", "#ffb2b2", "#5da38e", "#1e1b4b"].map((c) => (
+          <button
+            key={c}
+            onClick={() => document.documentElement.style.setProperty("--bg-primary", c)}
+            className="w-8 h-8 border-[3px] border-black rounded-full hover:scale-110 transition-transform shadow-[2px_2px_0px_#000000]"
+            style={{ backgroundColor: c }}
+            title={c}
+          />
+        ))}
+      </div>
+
       {/* XP Progress */}
       <div className="bg-white rounded-[16px] border-[3px] border-black shadow-[4px_4px_0px_#000000] p-4 mb-6">
         <div className="flex items-center justify-between mb-2">
@@ -428,7 +493,7 @@ function RightPanel({ dailyXP, totalXP }: { dailyXP: number; totalXP: number }) 
       {/* Current Streak */}
       <div className="bg-[#f3ff00] rounded-[16px] border-[3px] border-black shadow-[4px_4px_0px_#000000] p-4 mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-[50px] h-[50px] bg-[#ff1814] rounded-full border-[3px] border-black flex items-center justify-center">
+          <div className="w-[50px] h-[50px] bg-[var(--bg-primary)] rounded-full border-[3px] border-black flex items-center justify-center">
             <Flame size={28} strokeWidth={3} className="text-[#f3ff00]" fill="#f3ff00" />
           </div>
           <div>
@@ -448,7 +513,7 @@ function RightPanel({ dailyXP, totalXP }: { dailyXP: number; totalXP: number }) 
           <h3 className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-black uppercase">
             Leaderboard
           </h3>
-          <Trophy size={18} strokeWidth={3} className="text-[#ff1814]" />
+          <Trophy size={18} strokeWidth={3} className="text-[var(--bg-primary)]" />
         </div>
         <div className="space-y-2">
           {[
@@ -481,69 +546,70 @@ function RightPanel({ dailyXP, totalXP }: { dailyXP: number; totalXP: number }) 
   );
 }
 
-export default function Dashboard() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  
-  // Get active tab from URL path
-  const getActiveTab = () => {
-    const path = location.pathname;
-    if (path.includes('/therapy')) return 'therapy';
-    if (path.includes('/superbear')) return 'superbear';
-    if (path.includes('/streaks')) return 'streaks';
-    if (path.includes('/profile')) return 'profile';
-    return 'learn';
-  };
-  
-  const [activeTab, setActiveTab] = useState(getActiveTab());
+export default function Dashboard({ onLogout }: { onLogout: () => void }) {
+  const [activeTab, setActiveTab] = useState('learn');
   const [isSuperBearProcessing, setIsSuperBearProcessing] = useState(false);
-  const [agentResponse, setAgentResponse] = useState<any>(null);
   const [dailyXP, setDailyXP] = useState(12); // Current daily XP (out of 20)
   const [totalXP, setTotalXP] = useState(1830); // Total lifetime XP for leaderboard
+  const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
+  
+  // Load saved color preference on mount
+  useEffect(() => {
+    const savedColor = localStorage.getItem('profileColor');
+    if (savedColor) {
+      document.documentElement.style.setProperty('--bg-primary', savedColor);
+    }
+  }, []);
   
   const handleXPEarned = (amount: number) => {
     setDailyXP(prev => Math.min(prev + amount, 20)); // Cap at 20 for daily goal
     setTotalXP(prev => prev + amount);
   };
 
-  const handleLogout = () => {
-    navigate('/');
-  };
-
-  return (
-    <div className="flex h-screen w-screen bg-[#ff1814] overflow-hidden">
-      <LeftNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-      
-      <Routes>
-        <Route path="learn" element={
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'learn':
+        return (
           <>
-            <CenterLearningPath onXPEarned={handleXPEarned} />
-            <RightPanel dailyXP={dailyXP} totalXP={totalXP} />
+            <BranchingRailCenter onXPEarned={handleXPEarned} />
+            <RightPanel dailyXP={dailyXP} totalXP={totalXP} isCollapsed={isRightPanelCollapsed} onToggleCollapse={() => setIsRightPanelCollapsed(!isRightPanelCollapsed)} />
           </>
-        } />
-        <Route path="therapy" element={<TradingTherapy />} />
-        <Route path="superbear" element={
+        );
+      case 'superbear':
+        return (
           <>
-            <SuperBear onProcessingChange={setIsSuperBearProcessing} onAgentResponse={setAgentResponse} />
-            <SuperBearRightPanel isProcessing={isSuperBearProcessing} agentResponse={agentResponse} />
+            <SuperBear onProcessingChange={setIsSuperBearProcessing} />
+            <SuperBearRightPanel isProcessing={isSuperBearProcessing} />
           </>
-        } />
-        <Route path="streaks" element={
+        );
+      case 'streaks':
+        return (
           <>
             <StreaksCenter />
             <StreaksRightPanel />
           </>
-        } />
-        <Route path="profile" element={
+        );
+      case 'profile':
+        return (
           <>
-            <ProfileCenter onLogout={handleLogout} />
+            <ProfileCenter onLogout={onLogout} />
             <ProfileRightPanel />
           </>
-        } />
-        {/* Default redirect to learn */}
-        <Route path="" element={<Navigate to="learn" replace />} />
-        <Route path="*" element={<Navigate to="learn" replace />} />
-      </Routes>
+        );
+      default:
+        return (
+          <>
+            <BranchingRailCenter onXPEarned={handleXPEarned} />
+            <RightPanel dailyXP={dailyXP} totalXP={totalXP} isCollapsed={isRightPanelCollapsed} onToggleCollapse={() => setIsRightPanelCollapsed(!isRightPanelCollapsed)} />
+          </>
+        );
+    }
+  };
+
+  return (
+    <div className="flex h-screen w-screen bg-[var(--bg-primary)] overflow-hidden">
+      <LeftNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      {renderContent()}
     </div>
   );
 }

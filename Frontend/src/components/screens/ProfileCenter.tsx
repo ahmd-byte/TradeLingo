@@ -1,4 +1,5 @@
-import { Flame, Shield, Trophy, Zap, Edit2, X } from 'lucide-react';
+import { Flame, Shield, Trophy, Zap, Edit2, X, Palette } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 type FriendSuggestion = {
   id: string;
@@ -8,58 +9,56 @@ type FriendSuggestion = {
   followedBy: string;
 };
 
-// FOR FUTURE: Achievements feature
-// type Achievement = {
-//   id: string;
-//   title: string;
-//   description: string;
-//   progress: number;
-//   total: number;
-//   icon: string;
-//   color: string;
-//   level: number;
-// };
+const DEFAULT_COLOR = '#3bd6ff';
+const PRESET_COLORS = [
+  { color: '#f570dc', name: 'Pink' },
+  { color: '#3bd6ff', name: 'Cyan' },
+  { color: '#ff3131', name: 'Red' },
+  { color: '#ffb2b2', name: 'Rose' },
+  { color: '#5da38e', name: 'Teal' },
+  { color: '#1e1b4b', name: 'Starry Night' },
+];
 
 export default function ProfileCenter({ onLogout }: { onLogout: () => void }) {
+  const [selectedColor, setSelectedColor] = useState(DEFAULT_COLOR);
+  const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [buttonFlash, setButtonFlash] = useState(false);
+
   const friendSuggestions: FriendSuggestion[] = [
     { id: '1', name: 'LOLA', initial: 'L', color: '#fb923c', followedBy: 'Follows you' },
     { id: '2', name: 'Miguel', initial: 'M', color: '#c084fc', followedBy: 'Followed by Olivia' },
     { id: '3', name: 'Divyanshi', initial: 'D', color: '#3b82f6', followedBy: 'Followed by Olivia' },
   ];
 
-  // FOR FUTURE: Achievements feature
-  // const achievements: Achievement[] = [
-  //   {
-  //     id: '1',
-  //     title: 'Wildfire',
-  //     description: 'Reach a 3 day streak',
-  //     progress: 2,
-  //     total: 3,
-  //     icon: '🔥',
-  //     color: '#ff6b35',
-  //     level: 1,
-  //   },
-  //   {
-  //     id: '2',
-  //     title: 'Sage',
-  //     description: 'Earn 100 XP',
-  //     progress: 73,
-  //     total: 100,
-  //     icon: '🏆',
-  //     color: '#22c55e',
-  //     level: 1,
-  //   },
-  //   {
-  //     id: '3',
-  //     title: 'Champion',
-  //     description: 'Unlock Leaderboards by completing 10 lessons',
-  //     progress: 0,
-  //     total: 1,
-  //     icon: '🏅',
-  //     color: '#fbbf24',
-  //     level: 1,
-  //   },
-  // ];
+  useEffect(() => {
+    const currentColor = localStorage.getItem('profileColor');
+    if (currentColor) {
+      setSelectedColor(currentColor);
+    }
+  }, []);
+
+  const handleColorChange = (color: string) => {
+    setSelectedColor(color);
+    localStorage.setItem('profileColor', color);
+    document.documentElement.style.setProperty('--bg-primary', color);
+    setIsColorPickerOpen(false);
+    
+    // Trigger flash effect
+    setButtonFlash(true);
+    setTimeout(() => setButtonFlash(false), 400);
+  };
+
+  const handlePresetColorChange = (color: string) => {
+    setSelectedColor(color);
+    localStorage.setItem('profileColor', color);
+    document.documentElement.style.setProperty('--bg-primary', color);
+  };
+
+  const handleResetToDefault = () => {
+    setSelectedColor(DEFAULT_COLOR);
+    localStorage.setItem('profileColor', DEFAULT_COLOR);
+    document.documentElement.style.setProperty('--bg-primary', DEFAULT_COLOR);
+  };
 
   return (
     <div className="flex-1 h-screen overflow-y-auto bg-[#0f172a] p-8">
@@ -98,7 +97,7 @@ export default function ProfileCenter({ onLogout }: { onLogout: () => void }) {
           </div>
 
           {/* Edit Profile Button */}
-          <button className="bg-[#ff1814] border-[3px] border-black rounded-[12px] px-6 py-2 shadow-[5px_5px_0px_#000000] hover:shadow-[3px_3px_0px_#000000] active:shadow-[1px_1px_0px_#000000] transition-all">
+          <button className="bg-[var(--bg-primary)] border-[3px] border-black rounded-[12px] px-6 py-2 shadow-[5px_5px_0px_#000000] hover:shadow-[3px_3px_0px_#000000] active:shadow-[1px_1px_0px_#000000] transition-all">
             <span className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-white uppercase">
               Edit Profile
             </span>
@@ -165,6 +164,112 @@ export default function ProfileCenter({ onLogout }: { onLogout: () => void }) {
           </div>
         </div>
 
+        {/* Color Customization */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-['Arimo:Bold',sans-serif] font-bold text-[24px] text-white uppercase">
+              App Theme Color
+            </h2>
+            <button
+              onClick={handleResetToDefault}
+              className="font-['Arimo:Bold',sans-serif] font-bold text-[12px] text-[#f3ff00] uppercase hover:underline"
+            >
+              Reset to Default
+            </button>
+          </div>
+          <div className="bg-[#1e293b] rounded-[24px] border-[3px] border-white/10 p-6">
+            {/* Current Color Display */}
+            <div className="flex items-center gap-4 mb-6">
+              <div
+                className="w-[80px] h-[80px] rounded-[16px] border-[4px] border-black shadow-[4px_4px_0px_#000000] transition-all"
+                style={{ backgroundColor: selectedColor }}
+              />
+              <div>
+                <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-white/60 uppercase mb-1">
+                  Current Color
+                </p>
+                <p className="font-['Arimo:Bold',sans-serif] font-bold text-[20px] text-white uppercase">
+                  {selectedColor}
+                </p>
+                {selectedColor === DEFAULT_COLOR && (
+                  <p className="font-['Arimo:Bold',sans-serif] font-bold text-[12px] text-[#22c55e] uppercase">
+                    Default
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Preset Colors */}
+            <div className="mb-4">
+              <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-white/60 uppercase mb-3">
+                Preset Colors
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                {PRESET_COLORS.map((preset) => (
+                  <button
+                    key={preset.color}
+                    onClick={() => handlePresetColorChange(preset.color)}
+                    className={`relative group rounded-[12px] border-[3px] p-3 transition-all hover:scale-105 ${
+                      selectedColor === preset.color
+                        ? 'border-[#f3ff00] shadow-[4px_4px_0px_#f3ff00]'
+                        : 'border-white/20 hover:border-white/40'
+                    }`}
+                  >
+                    <div
+                      className="w-full h-[60px] rounded-[8px] border-[3px] border-black mb-2"
+                      style={{ backgroundColor: preset.color }}
+                    />
+                    <p className="font-['Arimo:Bold',sans-serif] font-bold text-[12px] text-white text-center uppercase">
+                      {preset.name}
+                    </p>
+                    {selectedColor === preset.color && (
+                      <div className="absolute -top-2 -right-2 w-[24px] h-[24px] bg-[#f3ff00] rounded-full border-[2px] border-black flex items-center justify-center">
+                        <span className="text-[14px]">✓</span>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom Color Picker */}
+            <div className="mt-6 pt-6 border-t-[2px] border-white/10">
+              <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-white/60 uppercase mb-3">
+                Custom Color
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <input
+                    type="color"
+                    value={selectedColor}
+                    onChange={(e) => setSelectedColor(e.target.value)}
+                    className="w-[60px] h-[60px] rounded-[12px] border-[3px] border-black cursor-pointer"
+                    style={{ backgroundColor: selectedColor }}
+                  />
+                </div>
+                <button
+                  onClick={() => handleColorChange(selectedColor)}
+                  className="flex-1 border-[3px] border-black rounded-[12px] px-6 py-3 shadow-[4px_4px_0px_#000000] hover:shadow-[2px_2px_0px_#000000] active:shadow-[1px_1px_0px_#000000] transition-all"
+                  style={{ 
+                    backgroundColor: buttonFlash ? selectedColor : '#ffffff',
+                    transition: 'background-color 0.4s ease'
+                  }}
+                >
+                  <span 
+                    className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] uppercase"
+                    style={{ 
+                      color: buttonFlash ? '#ffffff' : '#000000',
+                      transition: 'color 0.4s ease'
+                    }}
+                  >
+                    Apply
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Friend Suggestions */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -212,7 +317,7 @@ export default function ProfileCenter({ onLogout }: { onLogout: () => void }) {
 
         {/* Logout Button */}
         <div className="mb-6">
-          <button 
+          <button
             onClick={onLogout}
             className="w-full bg-white border-[5px] border-black rounded-[16px] px-8 py-4 shadow-[8px_8px_0px_#000000] hover:shadow-[4px_4px_0px_#000000] active:shadow-[1px_1px_0px_#000000] transition-all"
           >

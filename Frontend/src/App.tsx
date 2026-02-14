@@ -1,20 +1,21 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LandingPage from './components/figma/LandingPage';
-import Dashboard from './components/figma/Dashboard';
+import { useState } from 'react';
+import LandingPage from './components/screens/LandingPage';
+import Dashboard from './components/screens/Dashboard';
 
 export default function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        {/* Landing / Onboarding */}
-        <Route path="/" element={<LandingPage />} />
-        
-        {/* Dashboard with nested routes */}
-        <Route path="/dashboard/*" element={<Dashboard />} />
-        
-        {/* Redirect old routes or unknown paths */}
-        <Route path="*" element={<Navigate to="/dashboard/learn" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
+  const [view, setView] = useState<'landing' | 'dashboard'>('dashboard');
+
+  const handleLogout = () => {
+    setView('landing');
+  };
+
+  const handleOnboardingComplete = () => {
+    setView('dashboard');
+  };
+
+  if (view === 'dashboard') {
+    return <Dashboard onLogout={handleLogout} />;
+  }
+
+  return <LandingPage onComplete={handleOnboardingComplete} />;
 }
