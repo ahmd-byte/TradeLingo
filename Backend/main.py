@@ -17,7 +17,6 @@ from typing import Optional, Dict, Any
 
 from agent.graph import superbear_graph
 from agent.state import AgentState
-from memory import LearningMemory
 from database import connect_to_mongo, close_mongo_connection, get_database
 from auth.schemas import UserResponse
 from auth.routes import router as auth_router
@@ -69,9 +68,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Session memory (in production, use persistent storage like Redis or MongoDB)
-session_memory = {}
-
 
 # Pydantic models
 class UserProfile(BaseModel):
@@ -106,19 +102,8 @@ class TherapyRequest(BaseModel):
     trade_data: Optional[TradeData] = None
 
 
-def get_or_create_session_memory(session_id: str) -> LearningMemory:
-    """
-    Get or create learning memory for a user session.
-    
-    Args:
-        session_id (str): The user's session ID
-    
-    Returns:
-        LearningMemory: The user's learning memory
-    """
-    if session_id not in session_memory:
-        session_memory[session_id] = LearningMemory()
-    return session_memory[session_id]
+# Maximum number of memory entries to keep per array
+MEMORY_CAP = 50
 
 
 @app.get("/api/health")
@@ -187,18 +172,22 @@ async def chat(
         therapy_output = result.get("therapy_output")
 
         if research_output:
-            memory_doc["concepts_taught"].append({
+            memory_doc.setdefault("concepts_taught", []).append({
                 "concept": research_output.get("learning_concept"),
                 "explanation": research_output.get("teaching_explanation"),
                 "timestamp": result.get("timestamp"),
             })
 
         if therapy_output:
-            memory_doc["emotional_patterns"].append({
+            memory_doc.setdefault("emotional_patterns", []).append({
                 "emotion": therapy_output.get("emotional_state"),
                 "trigger": request.message[:100],  # Store first 100 chars as trigger
                 "timestamp": result.get("timestamp"),
             })
+
+        # Cap arrays to the most recent MEMORY_CAP entries
+        memory_doc["concepts_taught"] = memory_doc.get("concepts_taught", [])[-MEMORY_CAP:]
+        memory_doc["emotional_patterns"] = memory_doc.get("emotional_patterns", [])[-MEMORY_CAP:]
 
         # Save updated memory to MongoDB
         await database["memories"].update_one(
@@ -275,17 +264,21 @@ async def therapy(
         research_output = result.get("research_output")
 
         if therapy_output:
-            memory_doc["emotional_patterns"].append({
+            memory_doc.setdefault("emotional_patterns", []).append({
                 "emotion": therapy_output.get("emotional_state"),
                 "trigger": request.message[:100],
                 "timestamp": result.get("timestamp"),
             })
 
         if research_output:
-            memory_doc["concepts_taught"].append({
+            memory_doc.setdefault("concepts_taught", []).append({
                 "concept": research_output.get("learning_concept"),
                 "timestamp": result.get("timestamp"),
             })
+
+        # Cap arrays to the most recent MEMORY_CAP entries
+        memory_doc["concepts_taught"] = memory_doc.get("concepts_taught", [])[-MEMORY_CAP:]
+        memory_doc["emotional_patterns"] = memory_doc.get("emotional_patterns", [])[-MEMORY_CAP:]
 
         # Save updated memory to MongoDB
         await database["memories"].update_one(
