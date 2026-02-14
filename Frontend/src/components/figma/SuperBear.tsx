@@ -3,7 +3,8 @@ import superBearImage from "figma:asset/789c2c0c2a8de258540ceea8886d63826611f10a
 import { sendMessage } from '../../services/chatService';
 import { explainTrade } from '../../services/tradeService';
 import TradeDiagnosticView from './TradeDiagnosticView';
-import type { TradeDiagnostic } from '../../types/api';
+import SuperBearResponseView from './SuperBearResponseView';
+import type { TradeDiagnostic, SuperBearResponse } from '../../types/api';
 
 // Initial greeting text
 const greetingText = "SuperBear turns your trades into a private research.";
@@ -14,6 +15,7 @@ interface Message {
   text: string;
   quickReplies?: { label: string; action: string }[];
   tradeDiagnostic?: TradeDiagnostic;
+  aiResponse?: SuperBearResponse;
 }
 
 interface SuperBearProps {
@@ -31,6 +33,7 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
   const [isAiResponding, setIsAiResponding] = useState(false); // Track if AI is responding
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const messageIdCounter = useRef(0); // Unique ID counter
 
   // Show bear first when component mounts
@@ -52,6 +55,11 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
     
     return () => clearTimeout(cloudTimer);
   }, [bearVisible]);
+
+  // Auto-scroll to bottom when new messages arrive or AI starts thinking
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isAiResponding]);
 
   // Typewriter effect for initial greeting
   useEffect(() => {
@@ -104,20 +112,33 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
       // Call the backend chat API
       const response = await sendMessage(userMessageText);
 
-      // Extract AI reply text from the backend response
-      const aiText =
-        (response.response as string) ||
-        JSON.stringify(response);
+      // Detect if response is a structured SuperBear response (has a "type" field)
+      const isStructured =
+        response &&
+        typeof response === 'object' &&
+        'type' in response &&
+        typeof (response as Record<string, unknown>).type === 'string';
 
       const aiMessage: Message = {
         id: messageIdCounter.current++,
         type: 'ai',
-        text: aiText,
+        text: '', // structured responses render via aiResponse, not text
         quickReplies: [
           { label: 'Create a branch about this', action: 'create-branch' },
           { label: "I'm feeling frustrated", action: 'emotional-support' },
         ],
       };
+
+      if (isStructured) {
+        aiMessage.aiResponse = response as unknown as SuperBearResponse;
+      } else {
+        // Fallback: plain text or unknown shape
+        aiMessage.text =
+          typeof response === 'string'
+            ? response
+            : (response as Record<string, unknown>).response as string ||
+              JSON.stringify(response);
+      }
 
       setMessages(prev => [...prev, aiMessage]);
     } catch {
@@ -258,6 +279,10 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
                           <div className="max-w-[90%]">
                             <TradeDiagnosticView data={message.tradeDiagnostic} />
                           </div>
+                        ) : message.aiResponse ? (
+                          <div className="bg-[#5eb3ff] border-[3px] border-black rounded-[16px] px-4 py-3 shadow-[3px_3px_0px_#000000] max-w-[85%]">
+                            <SuperBearResponseView data={message.aiResponse} />
+                          </div>
                         ) : (
                           <div className="bg-[#5eb3ff] border-[3px] border-black rounded-[16px] px-4 py-3 shadow-[3px_3px_0px_#000000] max-w-[85%]">
                             <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-black leading-relaxed">
@@ -287,6 +312,29 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
                   )}
                 </div>
               ))}
+
+              {/* Thinking Indicator - Shows in chat area while AI is responding */}
+              {isAiResponding && (
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
+                  <div className="flex justify-start items-center gap-2">
+                    <div className="bg-[#5eb3ff] border-[3px] border-black rounded-[16px] px-5 py-3 shadow-[3px_3px_0px_#000000]">
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1.5">
+                          <span className="w-[8px] h-[8px] bg-black rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-[8px] h-[8px] bg-black rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-[8px] h-[8px] bg-black rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                        <span className="font-['Arimo:Bold',sans-serif] font-bold text-[13px] text-black/60 ml-1">
+                          SuperBear is thinking...
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Scroll anchor */}
+              <div ref={chatEndRef} />
             </div>
           </div>
         )}
@@ -323,7 +371,7 @@ export default function SuperBear({ onProcessingChange }: SuperBearProps = {}) {
                 e.target.style.height = Math.min(e.target.scrollHeight, 150) + 'px';
               }}
               onKeyPress={handleKeyPress}
-              placeholder={isAiResponding ? "SuperBear is thinking..." : "Type your message..."}
+              placeholder="Type your message..."
               rows={1}
               disabled={isAiResponding}
               className={`flex-1 bg-white border-[5px] border-black rounded-[16px] px-6 py-4 shadow-[6px_6px_0px_#000000] font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-black placeholder:text-black/40 resize-none overflow-y-auto min-h-[56px] transition-all ${
