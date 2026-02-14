@@ -65,8 +65,8 @@ class LLMService:
                     last_error = e
                     await asyncio.sleep(delay)
                 else:
-                    raise RuntimeError(f"LLM API call failed: {e}")
-        raise RuntimeError(f"LLM API call failed after {MAX_RETRIES} retries: {last_error}")
+                    raise RuntimeError(f"LLM API call failed: {e}") from e
+        raise RuntimeError(f"LLM API call failed after {MAX_RETRIES} retries: {last_error}") from last_error
     
     async def call_gemini_json(self, prompt, json_schema=None):
         """
@@ -105,7 +105,7 @@ class LLMService:
             parsed_response = json.loads(response_text)
             return parsed_response
         except json.JSONDecodeError as e:
-            raise ValueError(f"Failed to parse Gemini response as JSON: {e}\nResponse: {response_text}")
+            raise ValueError(f"Failed to parse Gemini response as JSON: {e}\nResponse: {response_text}") from e
     
     async def call_gemini_text(self, prompt):
         """
