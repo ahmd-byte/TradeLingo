@@ -4,9 +4,13 @@ Therapy Node: Emotional wellness and psychology coaching
 Generates emotional support and trading psychology coaching.
 """
 
+import logging
+
 from agent.state import AgentState
 from prompts.therapy_prompt import build_therapy_prompt
 from services.llm_service import llm_service
+
+logger = logging.getLogger(__name__)
 
 
 async def therapy_node(state: AgentState) -> dict:
@@ -61,5 +65,5 @@ async def therapy_node(state: AgentState) -> dict:
         return {"therapy_output": therapy_output, "therapy_complete": True}
 
     except Exception as e:
-        print(f"Therapy node error: {e}")
+        logger.warning("Therapy node error: %s", e, exc_info=True)
         return {"therapy_output": None, "therapy_complete": True}

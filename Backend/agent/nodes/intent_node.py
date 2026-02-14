@@ -4,9 +4,13 @@ Intent Node: Intent classification and routing
 Detects user's primary intent (research vs therapy vs both) using LLM.
 """
 
+import logging
+
 from agent.state import AgentState
 from prompts.intent_prompt import build_intent_prompt
 from services.llm_service import llm_service
+
+logger = logging.getLogger(__name__)
 
 
 async def intent_node(state: AgentState) -> dict:
@@ -41,7 +45,7 @@ async def intent_node(state: AgentState) -> dict:
 
     except Exception as e:
         # Fallback to "both" if intent detection fails
-        print(f"Intent detection error: {e}")
+        logger.warning("Intent detection error: %s", e, exc_info=True)
         return {
             "intent": "both",
             "confidence": 0.0,

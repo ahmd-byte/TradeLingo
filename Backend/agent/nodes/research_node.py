@@ -4,9 +4,13 @@ Research Node: Educational content generation
 Generates structured trading educational content using OADT loop.
 """
 
+import logging
+
 from agent.state import AgentState
 from prompts.research_prompt import build_research_prompt
 from services.llm_service import llm_service
+
+logger = logging.getLogger(__name__)
 
 
 async def research_node(state: AgentState) -> dict:
@@ -61,5 +65,5 @@ async def research_node(state: AgentState) -> dict:
         return {"research_output": research_output, "research_complete": True}
 
     except Exception as e:
-        print(f"Research node error: {e}")
+        logger.warning("Research node error: %s", e, exc_info=True)
         return {"research_output": None, "research_complete": True}
