@@ -176,21 +176,21 @@ async def chat(
                 "emotional_patterns": [],
             }
 
-        research_output = result.research_output
-        therapy_output = result.therapy_output
+        research_output = result.get("research_output")
+        therapy_output = result.get("therapy_output")
 
         if research_output:
             memory_doc.setdefault("concepts_taught", []).append({
-                "concept": research_output.get("learning_concept"),
-                "explanation": research_output.get("teaching_explanation"),
-                "timestamp": result.timestamp,
+                "concept": research_output.get("learning_concept") if isinstance(research_output, dict) else None,
+                "explanation": research_output.get("teaching_explanation") if isinstance(research_output, dict) else None,
+                "timestamp": result.get("timestamp"),
             })
 
         if therapy_output:
             memory_doc.setdefault("emotional_patterns", []).append({
-                "emotion": therapy_output.get("emotional_state"),
+                "emotion": therapy_output.get("emotional_state") if isinstance(therapy_output, dict) else None,
                 "trigger": request.message[:100],  # Store first 100 chars as trigger
-                "timestamp": result.timestamp,
+                "timestamp": result.get("timestamp"),
             })
 
         # Cap arrays to the most recent MEMORY_CAP entries
@@ -204,8 +204,29 @@ async def chat(
             upsert=True,
         )
 
-        logger.info(f"Chat request from user: {current_user.email}, intent: {result.intent}")
-        return result.final_output or {"error": "No output generated"}
+        # ── Persist chat message to chat_history ──
+        final_output = result.get("final_output") or {"error": "No output generated"}
+        try:
+            await database["chat_history"].insert_one({
+                "user_id": str(current_user.id),
+                "role": "user",
+                "message": request.message,
+                "created_at": datetime.now(),
+            })
+            await database["chat_history"].insert_one({
+                "user_id": str(current_user.id),
+                "role": "ai",
+                "message": final_output.get("teaching_explanation") or final_output.get("validation") or str(final_output),
+                "intent": result.get("intent"),
+                "learning_concept": final_output.get("learning_concept"),
+                "full_response": final_output,
+                "created_at": datetime.now(),
+            })
+        except Exception as che:
+            logger.warning(f"Failed to persist chat history: {che}")
+
+        logger.info(f"Chat request from user: {current_user.email}, intent: {result.get('intent')}")
+        return final_output
 
     except Exception as e:
         logger.error(f"Error in /api/chat: {e}", exc_info=True)
@@ -268,20 +289,20 @@ async def therapy(
                 "emotional_patterns": [],
             }
 
-        therapy_output = result.therapy_output
-        research_output = result.research_output
+        therapy_output = result.get("therapy_output")
+        research_output = result.get("research_output")
 
         if therapy_output:
             memory_doc.setdefault("emotional_patterns", []).append({
-                "emotion": therapy_output.get("emotional_state"),
+                "emotion": therapy_output.get("emotional_state") if isinstance(therapy_output, dict) else None,
                 "trigger": request.message[:100],
-                "timestamp": result.timestamp,
+                "timestamp": result.get("timestamp"),
             })
 
         if research_output:
             memory_doc.setdefault("concepts_taught", []).append({
-                "concept": research_output.get("learning_concept"),
-                "timestamp": result.timestamp,
+                "concept": research_output.get("learning_concept") if isinstance(research_output, dict) else None,
+                "timestamp": result.get("timestamp"),
             })
 
         # Cap arrays to the most recent MEMORY_CAP entries
@@ -295,8 +316,29 @@ async def therapy(
             upsert=True,
         )
 
-        logger.info(f"Therapy request from user: {current_user.email}, intent: {result.intent}")
-        return result.final_output or {"error": "No output generated"}
+        # ── Persist therapy chat to chat_history ──
+        final_output = result.get("final_output") or {"error": "No output generated"}
+        try:
+            await database["chat_history"].insert_one({
+                "user_id": str(current_user.id),
+                "role": "user",
+                "message": request.message,
+                "created_at": datetime.now(),
+            })
+            await database["chat_history"].insert_one({
+                "user_id": str(current_user.id),
+                "role": "ai",
+                "message": final_output.get("validation") or final_output.get("teaching_explanation") or str(final_output),
+                "intent": result.get("intent"),
+                "learning_concept": final_output.get("related_concept"),
+                "full_response": final_output,
+                "created_at": datetime.now(),
+            })
+        except Exception as che:
+            logger.warning(f"Failed to persist therapy chat history: {che}")
+
+        logger.info(f"Therapy request from user: {current_user.email}, intent: {result.get('intent')}")
+        return final_output
 
     except Exception as e:
         logger.error(f"Error in /api/therapy: {e}", exc_info=True)
@@ -315,4 +357,4 @@ app.include_router(education_router)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=5000, reload=True)
+    uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
