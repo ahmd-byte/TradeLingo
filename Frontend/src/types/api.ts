@@ -109,6 +109,125 @@ export interface ChatResponse {
   [key: string]: unknown;
 }
 
+/** Progress info from mastery detection */
+export interface ProgressInfo {
+  mastery_detected: boolean;
+  confidence_level: number;
+  module_completed?: boolean;
+  completion_message?: string;
+  next_module?: Record<string, unknown>;
+  curriculum_complete?: boolean;
+  score_incremented?: boolean;
+  new_mastery_score?: number;
+}
+
+/** Educational response (lesson_question / research intents) */
+export interface EducationalResponse {
+  type: "educational";
+  observation?: string;
+  analysis?: string;
+  learning_concept?: string;
+  why_it_matters?: string;
+  teaching_explanation?: string;
+  teaching_example?: string;
+  actionable_takeaway?: string;
+  next_learning_suggestion?: string;
+  progress?: ProgressInfo | null;
+}
+
+/** Deep trade diagnostic response (trade_explain with real trade data) */
+export interface TradeDiagnosticResponse {
+  type: "trade_diagnostic";
+  trade_id?: string | null;
+  trade_metrics?: TradeMetrics | null;
+  trade_summary?: string;
+  technical_analysis?: {
+    entry_quality?: string;
+    exit_quality?: string;
+    risk_management?: string;
+  };
+  behavioral_analysis?: {
+    bias_detected?: string;
+    emotional_pattern?: string;
+  };
+  core_mistake?: string;
+  linked_knowledge_gap?: string;
+  recommended_lesson_topic?: string;
+  suggested_module_index?: number | null;
+  improvement_framework?: string[];
+  tone_style_used?: string;
+  progress?: ProgressInfo | null;
+}
+
+/** Conceptual trade explanation (trade_explain without trade data) */
+export interface TradeExplainConceptualResponse {
+  type: "trade_explain_conceptual";
+  what_happened?: string;
+  general_analysis?: string;
+  common_mistakes?: string;
+  linked_knowledge_gap?: string;
+  recommended_lesson_topic?: string;
+  suggested_module_index?: number | null;
+  improvement_suggestion?: string;
+  tone_style_used?: string;
+  progress?: ProgressInfo | null;
+}
+
+/** Trade explain error fallback */
+export interface TradeExplainErrorResponse {
+  type: "trade_explain_error";
+  error?: string;
+  fallback_advice?: string;
+  progress?: ProgressInfo | null;
+}
+
+/** Curriculum modification response */
+export interface CurriculumModifyResponse {
+  type: "curriculum_modify";
+  adjustment_type?: string;
+  new_focus?: string;
+  updated_module?: {
+    topic?: string;
+    difficulty?: string;
+    explanation_style?: string;
+    estimated_duration?: string;
+  };
+  progress?: ProgressInfo | null;
+}
+
+/** Wellness / therapy response from SuperBear */
+export interface WellnessResponse {
+  type: "wellness";
+  emotional_state?: string;
+  validation?: string;
+  perspective?: string;
+  coping_strategy?: string;
+  educational_focus?: string;
+  actionable_steps?: string[];
+  encouragement?: string;
+  related_concept?: string;
+  progress?: ProgressInfo | null;
+}
+
+/** Integrated response (both educational + wellness) */
+export interface IntegratedResponse {
+  type: "integrated";
+  primary_mode: "therapy" | "research";
+  therapy?: WellnessResponse | null;
+  research?: EducationalResponse | null;
+  progress?: ProgressInfo | null;
+}
+
+/** Union of all possible SuperBear response shapes */
+export type SuperBearResponse =
+  | EducationalResponse
+  | TradeDiagnosticResponse
+  | TradeExplainConceptualResponse
+  | TradeExplainErrorResponse
+  | CurriculumModifyResponse
+  | WellnessResponse
+  | IntegratedResponse;
+
 // ─── Trades ──────────────────────────────────────────────────────────────────
 
 export interface TechnicalAnalysis {
