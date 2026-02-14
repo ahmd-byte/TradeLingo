@@ -9,14 +9,16 @@ from agent.state import AgentState
 
 async def input_node(state: AgentState) -> dict:
     """
-    Parse user input and extract metadata.
+    Parse and normalize user input.
 
     Validations:
-    - Message length minimum
+    - Message length minimum (3 characters after stripping)
     - Message content validation
 
     Returns:
-        Empty dict (no state changes needed)
+        Dict with 'user_message' key containing the stripped/normalized
+        user input, i.e. {"user_message": state["user_message"].strip()}.
+        This updates the state by normalizing whitespace in the user's message.
     """
 
     # Validate message
