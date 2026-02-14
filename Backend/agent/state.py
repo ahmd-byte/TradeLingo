@@ -13,7 +13,8 @@ class AgentState(TypedDict, total=False):
     Each node returns a dict of only the fields it updates.
     """
 
-    # Input (required)
+    # Input — required at runtime (enforced by input_node), but marked optional
+    # here because total=False is needed for LangGraph's partial-update pattern.
     user_message: str
     user_id: str
     user_profile: Dict[str, Any]
