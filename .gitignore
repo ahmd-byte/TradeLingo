@@ -1,4 +1,11 @@
-# Dependencies
+# Python (Backend)
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# Node.js (Frontend)
 node_modules/
 /.pnp
 .pnp.js
@@ -6,9 +13,11 @@ node_modules/
 # Testing
 /coverage
 
-# Production
+# Production/Build
 /build
 /dist
+dist/
+build/
 
 # Environment variables
 .env
@@ -25,8 +34,9 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Editor directories and files
-.vscode/*
+.vscode/
 !.vscode/extensions.json
+.idea/
 .idea
 .DS_Store
 *.suo
@@ -34,6 +44,8 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+*.swp
+*.swo
 
 # Vite
 .vite
