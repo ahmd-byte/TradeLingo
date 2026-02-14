@@ -11,6 +11,7 @@ from .load_learning_context_node import load_learning_context_node
 from .trade_explain_node import trade_explain_node
 from .curriculum_modify_node import curriculum_modify_node
 from .mastery_detection_node import mastery_detection_node
+from .reflection_node import reflection_node
 
 __all__ = [
     "input_node",
@@ -22,4 +23,5 @@ __all__ = [
     "trade_explain_node",
     "curriculum_modify_node",
     "mastery_detection_node",
+    "reflection_node",
 ]

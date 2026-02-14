@@ -3,11 +3,15 @@ Curriculum Generator Node — Education Pipeline
 
 Uses Gemini to produce a personalised curriculum (4–6 modules) based on
 the student's knowledge gaps, profile, and learning style.
+
+Difficulty is informed by the learning_profiles collection if available
+(populated by the reflection system).
 """
 
 import logging
 from agent.education_state import EducationState
 from services.llm_service import llm_service
+from services.reflection_service import get_learning_profile
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +29,12 @@ Knowledge gap analysis:
 - Weak concepts: {weak_concepts}
 - Behavioral patterns: {behavioral_patterns}
 - Recommended focus: {recommended_focus}
+
+Difficulty calibration:
+- Assessed difficulty level: {assessed_difficulty}
+- If beginner: use simpler explanations and foundational topics
+- If intermediate: include moderate analysis and strategy topics
+- If advanced: deeper quantitative analysis and complex strategies
 
 Design a personalised trading curriculum with 4 to 6 modules.
 Each module should directly address the student's weak areas while
@@ -65,6 +75,14 @@ async def curriculum_node(state: EducationState) -> dict:
     gaps = state.get("knowledge_gaps", {})
     trade_type = state.get("trade_type") or "unknown"
 
+    # Fetch assessed difficulty from learning_profiles (reflection system)
+    assessed_difficulty = "beginner"
+    try:
+        learning_profile = await get_learning_profile(state.get("user_id", ""))
+        assessed_difficulty = learning_profile.get("difficulty_level", "beginner")
+    except Exception:
+        pass  # Fallback to beginner if profile unavailable
+
     prompt = CURRICULUM_PROMPT_TEMPLATE.format(
         trading_level=profile.get("trading_level", "beginner"),
         trade_type=trade_type,
@@ -74,6 +92,7 @@ async def curriculum_node(state: EducationState) -> dict:
         weak_concepts=_join(gaps.get("weak_concepts")),
         behavioral_patterns=_join(gaps.get("behavioral_patterns")),
         recommended_focus=_join(gaps.get("recommended_focus")),
+        assessed_difficulty=assessed_difficulty,
     )
 
     result = await llm_service.call_gemini_json(prompt)

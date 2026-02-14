@@ -31,6 +31,9 @@ class AgentState(BaseModel):
     current_module: Optional[Dict[str, Any]] = None
     trade_type: Optional[str] = None
 
+    # Trade diagnostic context (for deep trade analysis)
+    trade_data: Optional[Dict[str, Any]] = None  # Full trade record for diagnosis
+
     # Research node output
     research_output: Optional[Dict[str, Any]] = None
     research_complete: bool = False
@@ -41,6 +44,9 @@ class AgentState(BaseModel):
 
     # Mastery detection output
     mastery_result: Optional[Dict[str, Any]] = None
+
+    # Reflection output (internal — not shown to user)
+    reflection_output: Optional[Dict[str, Any]] = None
 
     # Memory
     memory_doc: Optional[Dict] = None

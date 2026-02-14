@@ -17,7 +17,9 @@ from agent.nodes import (
     trade_explain_node,
     curriculum_modify_node,
     mastery_detection_node,
+    reflection_node,
 )
+from agent.nodes.reflection_node import should_trigger_reflection
 
 
 def create_superbear_graph():
@@ -52,7 +54,8 @@ def create_superbear_graph():
     graph_builder.add_node("therapy", therapy_node)
     graph_builder.add_node("trade_explain", trade_explain_node)
     graph_builder.add_node("curriculum_modify", curriculum_modify_node)
-    graph_builder.add_node("mastery_detection", mastery_detection_node)  # NEW
+    graph_builder.add_node("mastery_detection", mastery_detection_node)
+    graph_builder.add_node("reflection", reflection_node)  # Stage 6
     graph_builder.add_node("merge", merge_node)
 
     # Linear flow: input → load_context → classify
@@ -90,8 +93,24 @@ def create_superbear_graph():
     graph_builder.add_edge("therapy", "mastery_detection")
     graph_builder.add_edge("research", "mastery_detection")
 
-    # Mastery detection leads to merge
-    graph_builder.add_edge("mastery_detection", "merge")
+    # Mastery detection → conditional reflection → merge
+    def route_after_mastery(state: AgentState):
+        """Run reflection only when trigger conditions are met."""
+        if should_trigger_reflection(state):
+            return "reflection"
+        return "merge"
+
+    graph_builder.add_conditional_edges(
+        "mastery_detection",
+        route_after_mastery,
+        {
+            "reflection": "reflection",
+            "merge": "merge",
+        },
+    )
+
+    # Reflection always flows to merge
+    graph_builder.add_edge("reflection", "merge")
 
     # Final output
     graph_builder.add_edge("merge", END)
