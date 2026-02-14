@@ -108,6 +108,12 @@ class TherapyRequest(BaseModel):
 MEMORY_CAP = 50
 
 
+@app.get("/")
+async def root():
+    """Root endpoint."""
+    return {"message": "Welcome to TradeLingo API", "version": "2.0.0", "docs": "/docs"}
+
+
 @app.get("/api/health")
 async def health():
     """Health check endpoint."""
