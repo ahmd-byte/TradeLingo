@@ -76,6 +76,16 @@ async def create_indexes():
         await trades_collection.create_index("user_id")
         await trades_collection.create_index("created_at")
         await trades_collection.create_index([("created_at", -1)])  # For sorting
+
+        # Quiz history collection indexes
+        quiz_history_collection = db["quiz_history"]
+        await quiz_history_collection.create_index("user_id")
+        await quiz_history_collection.create_index([("created_at", -1)])
+
+        # Chat history collection indexes
+        chat_history_collection = db["chat_history"]
+        await chat_history_collection.create_index("user_id")
+        await chat_history_collection.create_index([("created_at", -1)])
         
         logger.info("✅ Database indexes created")
         

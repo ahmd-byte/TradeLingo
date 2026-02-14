@@ -7,6 +7,7 @@ GET  /api/education/progress    — Get user's learning progress
 """
 
 import logging
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -15,6 +16,7 @@ from pydantic import BaseModel, Field
 from auth.schemas import UserResponse
 from auth.dependencies import get_current_active_user
 from agent.education_graph import generate_quiz, generate_curriculum
+from database import get_database
 from services import progress_service
 
 logger = logging.getLogger(__name__)
@@ -110,6 +112,29 @@ async def submit_quiz(
             profile=profile,
             trade_type=trade_type,
         )
+
+        # ── Persist quiz Q&A to quiz_history collection ──
+        try:
+            db = get_database()
+            qa_pairs = []
+            for q, a in zip(request.quiz_questions, request.quiz_answers):
+                qa_pairs.append({
+                    "question": q.get("question") if isinstance(q, dict) else str(q),
+                    "concept_tested": q.get("concept_tested", "") if isinstance(q, dict) else "",
+                    "options": q.get("options", []) if isinstance(q, dict) else [],
+                    "correct_answer": q.get("correct_answer") if isinstance(q, dict) else None,
+                    "user_answer": a,
+                })
+            await db["quiz_history"].insert_one({
+                "user_id": str(current_user.id),
+                "quiz_type": "diagnostic",
+                "qa_pairs": qa_pairs,
+                "knowledge_gaps": result.get("knowledge_gaps", {}),
+                "created_at": datetime.now(timezone.utc),
+            })
+            logger.info(f"Quiz Q&A persisted for user {current_user.id}")
+        except Exception as qe:
+            logger.warning(f"Failed to persist quiz history: {qe}")
 
         return SubmitQuizResponse(
             knowledge_gaps=result.get("knowledge_gaps", {}),

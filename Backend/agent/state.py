@@ -51,6 +51,10 @@ class AgentState(BaseModel):
     # Memory
     memory_doc: Optional[Dict] = None
 
+    # Persisted history (loaded from MongoDB for AI context)
+    quiz_history: Optional[List[Dict[str, Any]]] = None
+    chat_history: Optional[List[Dict[str, Any]]] = None
+
     # Final merged output
     final_output: Optional[Dict[str, Any]] = None
 
