@@ -21,6 +21,8 @@ from database import connect_to_mongo, close_mongo_connection, get_database
 from auth.schemas import UserResponse
 from auth.routes import router as auth_router
 from auth.dependencies import get_current_active_user
+from routes.trade_routes import router as trade_router
+from routes.education_routes import router as education_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -297,6 +299,12 @@ async def therapy(
 
 # Include authentication router
 app.include_router(auth_router)
+
+# Include trade history router
+app.include_router(trade_router)
+
+# Include education pipeline router
+app.include_router(education_router)
 
 
 if __name__ == "__main__":

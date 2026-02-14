@@ -4,40 +4,59 @@ AgentState Definition for SuperBear LangGraph Workflow
 Shared state passed between all nodes in the graph.
 """
 
-from typing import Optional, Dict, Literal, Any, TypedDict
+from typing import Optional, List, Dict, Literal, Any
+from pydantic import BaseModel, Field
 
 
-class AgentState(TypedDict, total=False):
+class AgentState(BaseModel):
     """
     Shared state that flows through all nodes in the SuperBear graph.
-    Each node returns a dict of only the fields it updates.
+    Each node updates relevant fields and passes to next node.
     """
 
-    # Input — required at runtime (enforced by input_node), but marked optional
-    # here because total=False is needed for LangGraph's partial-update pattern.
+    # Input
     user_message: str
     user_id: str
     user_profile: Dict[str, Any]
 
-    # Intent detection
-    intent: Literal["research", "therapy", "both"]
-    confidence: float
-    emotional_state: Optional[str]  # "calm", "anxious", "frustrated", etc.
+    # Intent detection (expanded for curriculum-aware routing)
+    intent: str = "general_question"
+    confidence: float = 0.0
+    emotional_state: Optional[str] = None  # "calm", "anxious", "frustrated", etc.
+    detected_emotion: Optional[str] = None  # populated before intent classification
+
+    # Curriculum-aware context (loaded from MongoDB)
+    current_curriculum: Optional[Dict[str, Any]] = None
+    knowledge_gaps: Optional[Dict[str, Any]] = None
+    current_module: Optional[Dict[str, Any]] = None
+    trade_type: Optional[str] = None
+
+    # Trade diagnostic context (for deep trade analysis)
+    trade_data: Optional[Dict[str, Any]] = None  # Full trade record for diagnosis
 
     # Research node output
-    research_output: Optional[Dict[str, Any]]
-    research_complete: bool
+    research_output: Optional[Dict[str, Any]] = None
+    research_complete: bool = False
 
     # Therapy node output
-    therapy_output: Optional[Dict[str, Any]]
-    therapy_complete: bool
+    therapy_output: Optional[Dict[str, Any]] = None
+    therapy_complete: bool = False
+
+    # Mastery detection output
+    mastery_result: Optional[Dict[str, Any]] = None
+
+    # Reflection output (internal — not shown to user)
+    reflection_output: Optional[Dict[str, Any]] = None
 
     # Memory
-    memory_doc: Optional[Dict]
+    memory_doc: Optional[Dict] = None
 
     # Final merged output
-    final_output: Optional[Dict[str, Any]]
+    final_output: Optional[Dict[str, Any]] = None
 
     # Metadata
     timestamp: str
     session_id: str
+
+    class Config:
+        arbitrary_types_allowed = True
