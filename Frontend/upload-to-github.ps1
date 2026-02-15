@@ -2,7 +2,7 @@
 # Run this file in PowerShell to upload the frontend to GitHub
 
 # Navigate to frontend folder
-Set-Location "c:\Users\Truly\Projects\deriv hackathon superbear\frontend"
+Set-Location "C:\Users\mugunthan\OneDrive\Desktop\derivhack2hire\TradeLingo\Frontend"
 
 Write-Host "================================================" -ForegroundColor Cyan
 Write-Host "   SuperBear Frontend - GitHub Upload Script   " -ForegroundColor Cyan
