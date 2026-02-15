@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import mascotImage from '../../assets/mascot.png';
+import mascotImage from "../../assets/mascot.png";
 import { Button } from "../ui/button";
 import OnboardingFlow from "./OnboardingFlow";
 import SignUpForm from "./SignUpForm";

@@ -8,6 +8,7 @@ from fastapi import Depends, HTTPException, status, Header
 from fastapi.security import HTTPBearer
 from typing import Optional
 from bson import ObjectId
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from database import get_database
 from auth.models import UserInDB, UserResponse
@@ -20,7 +21,8 @@ security = HTTPBearer()
 
 
 async def get_current_user(
-    authorization: Optional[str] = Header(None),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+    # authorization: Optional[str] = Header(None),
 ) -> UserResponse:
     """
     Dependency to get current authenticated user.
@@ -34,23 +36,27 @@ async def get_current_user(
         
     Raises:
         HTTPException: If token is invalid or user not found
+
+    ps: commented codes are for testing purpose to test the api endpoint
     """
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authorization header",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    # if not authorization:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED,
+    #         detail="Missing authorization header",
+    #         headers={"WWW-Authenticate": "Bearer"},
+    #     )
     
     try:
-        # Extract token from "Bearer <token>"
-        scheme, token = authorization.split()
-        if scheme.lower() != "bearer":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid authentication scheme",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+    #     # Extract token from "Bearer <token>"
+    #     scheme, token = authorization.split()
+    #     if scheme.lower() != "bearer":
+    #         raise HTTPException(
+    #             status_code=status.HTTP_401_UNAUTHORIZED,
+    #             detail="Invalid authentication scheme",
+    #             headers={"WWW-Authenticate": "Bearer"},
+    #         )
+
+        token = credentials.credentials
         
         # Decode and validate token
         payload = decode_token(token)
@@ -90,12 +96,12 @@ async def get_current_user(
         user_doc_str_id.setdefault("has_connected_trades", False)
         return UserResponse(**user_doc_str_id)
         
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authorization header format",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    # except ValueError:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED,
+    #         detail="Invalid authorization header format",
+    #         headers={"WWW-Authenticate": "Bearer"},
+    #     )
     except HTTPException:
         raise
     except Exception as e:
@@ -131,7 +137,8 @@ async def get_current_active_user(
 
 
 async def get_optional_user(
-    authorization: Optional[str] = Header(None),
+    # authorization: Optional[str] = Header(None),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
 ) -> Optional[UserResponse]:
     """
     Dependency for optional authentication.
@@ -143,13 +150,15 @@ async def get_optional_user(
     Returns:
         User if authenticated, None otherwise
     """
-    if not authorization:
+    # if not authorization:
+    if not credentials:
         return None
     
     try:
-        scheme, token = authorization.split()
-        if scheme.lower() != "bearer":
-            return None
+        # scheme, token = authorization.split()
+        # if scheme.lower() != "bearer":
+        #     return None
+        token = credentials.credentials
         
         user_id = get_user_id_from_token(token)
         if user_id is None:

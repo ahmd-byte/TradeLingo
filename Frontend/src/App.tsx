@@ -13,7 +13,7 @@ export default function App() {
     setView('dashboard');
   };
 
-  if (view === 'dashboard') {
+  if (view === 'landing') {
     return <Dashboard onLogout={handleLogout} />;
   }
 
