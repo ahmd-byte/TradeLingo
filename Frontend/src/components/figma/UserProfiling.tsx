@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import imgChatGptImageFeb72026034014Pm1 from "figma:asset/c47576d9fb019c19ae2380c4945c7cde9e97a55b.png";
 import derivLogo from "figma:asset/d70baeb329438db450b57deadd82b6c061377d05.png";
 import { Button } from "../ui/button";
 
 // Types
-type TraderLevel = 'new' | 'occasional' | 'experienced' | null;
+type TraderLevel = "new" | "occasional" | "experienced" | null;
 type OnboardingAnswers = {
   name?: string;
   email?: string;
@@ -21,7 +21,7 @@ type OnboardingAnswers = {
 function ProgressBar({ progress }: { progress: number }) {
   return (
     <div className="absolute top-4 left-0 right-0 h-2 bg-black/20">
-      <div 
+      <div
         className="h-full bg-[#f3ff00] transition-all duration-300 ease-out"
         style={{ width: `${progress}%` }}
       />
@@ -36,8 +36,17 @@ function BackButton({ onClick }: { onClick: () => void }) {
       className="w-10 h-10 flex items-center justify-center text-white hover:opacity-70 transition-opacity flex-shrink-0"
       aria-label="Go back"
     >
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      <svg
+        width="32"
+        height="32"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M19 12H5M12 19l-7-7 7-7" />
       </svg>
     </button>
   );
@@ -46,16 +55,24 @@ function BackButton({ onClick }: { onClick: () => void }) {
 function MascotTopLeft() {
   return (
     <div className="absolute top-8 left-8 w-[120px] h-[180px] rounded-[60px] overflow-hidden">
-      <img 
-        alt="SuperBear mascot" 
-        className="w-full h-full object-cover" 
-        src={imgChatGptImageFeb72026034014Pm1} 
+      <img
+        alt="SuperBear mascot"
+        className="w-full h-full object-cover"
+        src={imgChatGptImageFeb72026034014Pm1}
       />
     </div>
   );
 }
 
-function OptionCard({ text, onClick, icon }: { text: string; onClick: () => void; icon?: React.ReactNode }) {
+function OptionCard({
+  text,
+  onClick,
+  icon,
+}: {
+  text: string;
+  onClick: () => void;
+  icon?: React.ReactNode;
+}) {
   return (
     <button
       onClick={onClick}
@@ -67,19 +84,21 @@ function OptionCard({ text, onClick, icon }: { text: string; onClick: () => void
   );
 }
 
-function TraderLevelIcon({ level }: { level: 'new' | 'occasional' | 'experienced' }) {
+function TraderLevelIcon({
+  level,
+}: {
+  level: "new" | "occasional" | "experienced";
+}) {
   const bars = {
-    new: [
-      { height: 12, color: '#60a5fa' },
-    ],
+    new: [{ height: 12, color: "#60a5fa" }],
     occasional: [
-      { height: 12, color: '#60a5fa' },
-      { height: 20, color: '#60a5fa' },
+      { height: 12, color: "#60a5fa" },
+      { height: 20, color: "#60a5fa" },
     ],
     experienced: [
-      { height: 12, color: '#60a5fa' },
-      { height: 20, color: '#60a5fa' },
-      { height: 28, color: '#60a5fa' },
+      { height: 12, color: "#60a5fa" },
+      { height: 20, color: "#60a5fa" },
+      { height: 28, color: "#60a5fa" },
     ],
   };
 
@@ -114,15 +133,15 @@ function WelcomeStep({ onContinue }: { onContinue: () => void }) {
       </div>
 
       <div className="w-[280px] h-[420px] rounded-[140px] overflow-hidden">
-        <img 
-          alt="SuperBear mascot" 
-          className="w-full h-full object-cover" 
-          src={imgChatGptImageFeb72026034014Pm1} 
+        <img
+          alt="SuperBear mascot"
+          className="w-full h-full object-cover"
+          src={imgChatGptImageFeb72026034014Pm1}
         />
       </div>
 
-      <Button 
-        variant="offset" 
+      <Button
+        variant="offset"
         className="h-[68px] rounded-[16px] w-[480px] max-w-[480px] font-['Arimo:Bold',sans-serif] text-[24px] tracking-wide uppercase"
         onClick={onContinue}
       >
@@ -132,11 +151,17 @@ function WelcomeStep({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-function TraderLevelStep({ onSelect, onBack }: { onSelect: (level: TraderLevel) => void; onBack?: () => void }) {
+function TraderLevelStep({
+  onSelect,
+  onBack,
+}: {
+  onSelect: (level: TraderLevel) => void;
+  onBack?: () => void;
+}) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-8">
       <MascotTopLeft />
-      
+
       <div className="flex items-center gap-4 max-w-[700px] w-full justify-center">
         {onBack && <BackButton onClick={onBack} />}
         <h2 className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-white text-center uppercase tracking-wide">
@@ -145,19 +170,19 @@ function TraderLevelStep({ onSelect, onBack }: { onSelect: (level: TraderLevel) 
       </div>
 
       <div className="flex flex-col gap-4 w-full items-center">
-        <OptionCard 
-          text="New trader (never traded before)" 
-          onClick={() => onSelect('new')} 
+        <OptionCard
+          text="New trader (never traded before)"
+          onClick={() => onSelect("new")}
           icon={<TraderLevelIcon level="new" />}
         />
-        <OptionCard 
-          text="Occasional trader" 
-          onClick={() => onSelect('occasional')} 
+        <OptionCard
+          text="Occasional trader"
+          onClick={() => onSelect("occasional")}
           icon={<TraderLevelIcon level="occasional" />}
         />
-        <OptionCard 
-          text="Experienced trader" 
-          onClick={() => onSelect('experienced')} 
+        <OptionCard
+          text="Experienced trader"
+          onClick={() => onSelect("experienced")}
           icon={<TraderLevelIcon level="experienced" />}
         />
       </div>
@@ -165,11 +190,17 @@ function TraderLevelStep({ onSelect, onBack }: { onSelect: (level: TraderLevel) 
   );
 }
 
-function StartingPointStep({ onSelect, onBack }: { onSelect: (answer: string) => void; onBack: () => void }) {
+function StartingPointStep({
+  onSelect,
+  onBack,
+}: {
+  onSelect: (answer: string) => void;
+  onBack: () => void;
+}) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-8">
       <MascotTopLeft />
-      
+
       <div className="flex items-center gap-4 max-w-[700px] w-full justify-center">
         <BackButton onClick={onBack} />
         <h2 className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-white text-center uppercase tracking-wide">
@@ -178,19 +209,34 @@ function StartingPointStep({ onSelect, onBack }: { onSelect: (answer: string) =>
       </div>
 
       <div className="flex flex-col gap-4 w-full items-center">
-        <OptionCard text="I want to understand how trading works" onClick={() => onSelect('understand')} />
-        <OptionCard text="I've watched/read about trading but never tried" onClick={() => onSelect('watched')} />
-        <OptionCard text="I want guided, step-by-step learning" onClick={() => onSelect('guided')} />
+        <OptionCard
+          text="I want to understand how trading works"
+          onClick={() => onSelect("understand")}
+        />
+        <OptionCard
+          text="I've watched/read about trading but never tried"
+          onClick={() => onSelect("watched")}
+        />
+        <OptionCard
+          text="I want guided, step-by-step learning"
+          onClick={() => onSelect("guided")}
+        />
       </div>
     </div>
   );
 }
 
-function PreferredMarketStep({ onSelect, onBack }: { onSelect: (answer: string) => void; onBack: () => void }) {
+function PreferredMarketStep({
+  onSelect,
+  onBack,
+}: {
+  onSelect: (answer: string) => void;
+  onBack: () => void;
+}) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-8">
       <MascotTopLeft />
-      
+
       <div className="flex items-center gap-4 max-w-[700px] w-full justify-center">
         <BackButton onClick={onBack} />
         <h2 className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-white text-center uppercase tracking-wide">
@@ -199,20 +245,26 @@ function PreferredMarketStep({ onSelect, onBack }: { onSelect: (answer: string) 
       </div>
 
       <div className="flex flex-col gap-4 w-full items-center">
-        <OptionCard text="Stocks" onClick={() => onSelect('stocks')} />
-        <OptionCard text="Forex" onClick={() => onSelect('forex')} />
-        <OptionCard text="Crypto" onClick={() => onSelect('crypto')} />
-        <OptionCard text="Synthetics" onClick={() => onSelect('synthetics')} />
+        <OptionCard text="Stocks" onClick={() => onSelect("stocks")} />
+        <OptionCard text="Forex" onClick={() => onSelect("forex")} />
+        <OptionCard text="Crypto" onClick={() => onSelect("crypto")} />
+        <OptionCard text="Synthetics" onClick={() => onSelect("synthetics")} />
       </div>
     </div>
   );
 }
 
-function LearningStyleStep({ onSelect, onBack }: { onSelect: (answer: string) => void; onBack: () => void }) {
+function LearningStyleStep({
+  onSelect,
+  onBack,
+}: {
+  onSelect: (answer: string) => void;
+  onBack: () => void;
+}) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-8">
       <MascotTopLeft />
-      
+
       <div className="flex items-center gap-4 max-w-[700px] w-full justify-center">
         <BackButton onClick={onBack} />
         <h2 className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-white text-center uppercase tracking-wide">
@@ -221,20 +273,35 @@ function LearningStyleStep({ onSelect, onBack }: { onSelect: (answer: string) =>
       </div>
 
       <div className="flex flex-col gap-4 w-full items-center">
-        <OptionCard text="Analogies and stories" onClick={() => onSelect('analogies')} />
-        <OptionCard text="Numbers and logic" onClick={() => onSelect('numbers')} />
-        <OptionCard text="Technical and structured" onClick={() => onSelect('technical')} />
-        <OptionCard text="Mixed" onClick={() => onSelect('mixed')} />
+        <OptionCard
+          text="Analogies and stories"
+          onClick={() => onSelect("analogies")}
+        />
+        <OptionCard
+          text="Numbers and logic"
+          onClick={() => onSelect("numbers")}
+        />
+        <OptionCard
+          text="Technical and structured"
+          onClick={() => onSelect("technical")}
+        />
+        <OptionCard text="Mixed" onClick={() => onSelect("mixed")} />
       </div>
     </div>
   );
 }
 
-function RiskToleranceStep({ onSelect, onBack }: { onSelect: (answer: string) => void; onBack: () => void }) {
+function RiskToleranceStep({
+  onSelect,
+  onBack,
+}: {
+  onSelect: (answer: string) => void;
+  onBack: () => void;
+}) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-8">
       <MascotTopLeft />
-      
+
       <div className="flex items-center gap-4 max-w-[700px] w-full justify-center">
         <BackButton onClick={onBack} />
         <h2 className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-white text-center uppercase tracking-wide">
@@ -243,41 +310,71 @@ function RiskToleranceStep({ onSelect, onBack }: { onSelect: (answer: string) =>
       </div>
 
       <div className="flex flex-col gap-4 w-full items-center">
-        <OptionCard text="Conservative - Minimize losses" onClick={() => onSelect('conservative')} />
-        <OptionCard text="Moderate - Balanced approach" onClick={() => onSelect('moderate')} />
-        <OptionCard text="Aggressive - Maximum growth potential" onClick={() => onSelect('aggressive')} />
+        <OptionCard
+          text="Conservative - Minimize losses"
+          onClick={() => onSelect("conservative")}
+        />
+        <OptionCard
+          text="Moderate - Balanced approach"
+          onClick={() => onSelect("moderate")}
+        />
+        <OptionCard
+          text="Aggressive - Maximum growth potential"
+          onClick={() => onSelect("aggressive")}
+        />
       </div>
     </div>
   );
 }
 
-function TradingFrequencyStep({ onSelect, onBack, isNewTrader }: { onSelect: (answer: string) => void; onBack: () => void; isNewTrader?: boolean }) {
+function TradingFrequencyStep({
+  onSelect,
+  onBack,
+  isNewTrader,
+}: {
+  onSelect: (answer: string) => void;
+  onBack: () => void;
+  isNewTrader?: boolean;
+}) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-8">
       <MascotTopLeft />
-      
+
       <div className="flex items-center gap-4 max-w-[700px] w-full justify-center">
         <BackButton onClick={onBack} />
         <h2 className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-white text-center uppercase tracking-wide">
-          {isNewTrader ? "How often do you plan to trade?" : "How often do you trade?"}
+          {isNewTrader
+            ? "How often do you plan to trade?"
+            : "How often do you trade?"}
         </h2>
       </div>
 
       <div className="flex flex-col gap-4 w-full items-center">
-        <OptionCard text="Daily" onClick={() => onSelect('daily')} />
-        <OptionCard text="Weekly" onClick={() => onSelect('weekly')} />
-        <OptionCard text="Monthly" onClick={() => onSelect('monthly')} />
-        <OptionCard text="Occasionally" onClick={() => onSelect('occasionally')} />
+        <OptionCard text="Daily" onClick={() => onSelect("daily")} />
+        <OptionCard text="Weekly" onClick={() => onSelect("weekly")} />
+        <OptionCard text="Monthly" onClick={() => onSelect("monthly")} />
+        <OptionCard
+          text="Occasionally"
+          onClick={() => onSelect("occasionally")}
+        />
       </div>
     </div>
   );
 }
 
-function DerivConnectionStep({ onConnect, onSkip, onBack }: { onConnect: () => void; onSkip: () => void; onBack: () => void }) {
+function DerivConnectionStep({
+  onConnect,
+  onSkip,
+  onBack,
+}: {
+  onConnect: () => void;
+  onSkip: () => void;
+  onBack: () => void;
+}) {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-8">
       <MascotTopLeft />
-      
+
       <div className="flex items-center gap-4 max-w-[700px] w-full justify-center">
         <BackButton onClick={onBack} />
         <h2 className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-white text-center uppercase tracking-wide">
@@ -288,9 +385,9 @@ function DerivConnectionStep({ onConnect, onSkip, onBack }: { onConnect: () => v
       <div className="flex flex-col items-center gap-6 max-w-[500px]">
         {/* Deriv Logo */}
         <div className="w-[120px] h-[120px] bg-white rounded-[24px] border-[5px] border-black shadow-[8px_8px_0px_#000000] flex items-center justify-center p-4">
-          <img 
-            src={derivLogo} 
-            alt="Deriv" 
+          <img
+            src={derivLogo}
+            alt="Deriv"
             className="w-full h-full object-contain"
           />
         </div>
@@ -298,7 +395,8 @@ function DerivConnectionStep({ onConnect, onSkip, onBack }: { onConnect: () => v
         {/* Description */}
         <div className="bg-white border-[4px] border-black rounded-[20px] px-6 py-5 shadow-[6px_6px_0px_#000000]">
           <p className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-black text-center leading-relaxed">
-            Connect your Deriv account to access your complete trade history and get personalized insights from SuperBear!
+            Connect your Deriv account to access your complete trade history and
+            get personalized insights from SuperBear!
           </p>
         </div>
 
@@ -306,7 +404,9 @@ function DerivConnectionStep({ onConnect, onSkip, onBack }: { onConnect: () => v
         <div className="w-full space-y-3">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 bg-[#f3ff00] border-[3px] border-black rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-              <span className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-black">✓</span>
+              <span className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-black">
+                ✓
+              </span>
             </div>
             <p className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-white">
               Analyze your real trading patterns
@@ -314,7 +414,9 @@ function DerivConnectionStep({ onConnect, onSkip, onBack }: { onConnect: () => v
           </div>
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 bg-[#f3ff00] border-[3px] border-black rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-              <span className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-black">✓</span>
+              <span className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-black">
+                ✓
+              </span>
             </div>
             <p className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-white">
               Get personalized feedback and tips
@@ -322,7 +424,9 @@ function DerivConnectionStep({ onConnect, onSkip, onBack }: { onConnect: () => v
           </div>
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 bg-[#f3ff00] border-[3px] border-black rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-              <span className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-black">✓</span>
+              <span className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-black">
+                ✓
+              </span>
             </div>
             <p className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-white">
               Track progress with detailed analytics
@@ -332,14 +436,14 @@ function DerivConnectionStep({ onConnect, onSkip, onBack }: { onConnect: () => v
       </div>
 
       <div className="flex flex-col gap-4 w-full items-center">
-        <Button 
-          variant="offset" 
+        <Button
+          variant="offset"
           className="h-[68px] rounded-[16px] w-[480px] max-w-[480px] font-['Arimo:Bold',sans-serif] text-[24px] tracking-wide uppercase"
           onClick={onConnect}
         >
           Connect to Deriv
         </Button>
-        
+
         <button
           onClick={onSkip}
           className="font-['Arimo:Bold',sans-serif] font-bold text-[18px] text-white uppercase tracking-wide hover:text-[#f3ff00] transition-colors"
@@ -351,38 +455,47 @@ function DerivConnectionStep({ onConnect, onSkip, onBack }: { onConnect: () => v
   );
 }
 
-function TraderTypeRevealStep({ onContinue, derivConnected }: { onContinue: () => void; derivConnected: boolean }) {
-  const [animationStage, setAnimationStage] = useState<'loading' | 'scanning' | 'analyzing' | 'reveal'>('loading');
-  const [scanText, setScanText] = useState('Found 127 trades...');
+function TraderTypeRevealStep({
+  onContinue,
+  derivConnected,
+}: {
+  onContinue: () => void;
+  derivConnected: boolean;
+}) {
+  const [animationStage, setAnimationStage] = useState<
+    "loading" | "scanning" | "analyzing" | "reveal"
+  >("loading");
+  const [scanText, setScanText] = useState("Found 127 trades...");
   const [tradesCount, setTradesCount] = useState(0);
-  
+
   // TODO: Replace with backend API call to get trader type from Deriv analysis
   // For now, using placeholder data
   // Four trader types: Scalper, Day Trading, Swing Trading, Investment Trading
   const traderType = {
-    id: 'swing-trading',
-    name: 'Swing Trading',
-    emoji: '📈',
-    description: 'You hold trades for days to weeks, mixing technical analysis with some fundamentals. You focus on the bigger move and trend direction.',
-    traits: ['Lower screen time', 'Selective entries', 'Discipline to hold']
+    id: "swing-trading",
+    name: "Swing Trading",
+    emoji: "📈",
+    description:
+      "You hold trades for days to weeks, mixing technical analysis with some fundamentals. You focus on the bigger move and trend direction.",
+    traits: ["Lower screen time", "Selective entries", "Discipline to hold"],
   };
 
   // Animation progression - only runs if connected to Deriv
   useEffect(() => {
     if (!derivConnected) {
       // If not connected, skip animation and go straight to reveal
-      setAnimationStage('reveal');
+      setAnimationStage("reveal");
       return;
     }
 
     // Stage 1: Loading (1 second)
     const timer1 = setTimeout(() => {
-      setAnimationStage('scanning');
+      setAnimationStage("scanning");
     }, 1000);
 
     // Counting animation for trades
     const countInterval = setInterval(() => {
-      setTradesCount(prev => {
+      setTradesCount((prev) => {
         if (prev >= 127) {
           clearInterval(countInterval);
           return 127;
@@ -393,22 +506,22 @@ function TraderTypeRevealStep({ onContinue, derivConnected }: { onContinue: () =
 
     // Stage 2: Scanning - cycling funny text (2.5 seconds)
     const timer2 = setTimeout(() => {
-      setScanText('Oops, spotted some losses 👀');
+      setScanText("Oops, spotted some losses 👀");
     }, 2000);
 
     const timer3 = setTimeout(() => {
-      setScanText('No judging... we promise 😅');
+      setScanText("No judging... we promise 😅");
     }, 2800);
 
     // Stage 3: Analyzing (1 second)
     const timer4 = setTimeout(() => {
-      setAnimationStage('analyzing');
-      setScanText('Crunching the numbers...');
+      setAnimationStage("analyzing");
+      setScanText("Crunching the numbers...");
     }, 3500);
 
     // Stage 4: Reveal (0.5 seconds after analyzing)
     const timer5 = setTimeout(() => {
-      setAnimationStage('reveal');
+      setAnimationStage("reveal");
     }, 5000);
 
     return () => {
@@ -423,24 +536,24 @@ function TraderTypeRevealStep({ onContinue, derivConnected }: { onContinue: () =
 
   // Calculate progress segments (out of 4)
   const getProgressSegments = () => {
-    if (animationStage === 'loading') return 0;
-    if (animationStage === 'scanning') return 2;
-    if (animationStage === 'analyzing') return 3;
+    if (animationStage === "loading") return 0;
+    if (animationStage === "scanning") return 2;
+    if (animationStage === "analyzing") return 3;
     return 4;
   };
 
   // Show loading/scanning/analyzing animation if connected
-  if (derivConnected && animationStage !== 'reveal') {
+  if (derivConnected && animationStage !== "reveal") {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-10 px-8 py-12 relative overflow-hidden">
         <div className="flex flex-col items-center gap-8 w-full max-w-[700px] z-10">
           {/* Stage 1: Loading - Deriv Logo */}
-          {animationStage === 'loading' && (
+          {animationStage === "loading" && (
             <div className="flex flex-col items-center gap-6 animate-fade-in">
               <div className="w-[140px] h-[140px] bg-white rounded-[28px] border-[5px] border-black shadow-[12px_12px_0px_#000000] flex items-center justify-center p-5">
-                <img 
-                  src={derivLogo} 
-                  alt="Deriv" 
+                <img
+                  src={derivLogo}
+                  alt="Deriv"
                   className="w-full h-full object-contain"
                 />
               </div>
@@ -451,7 +564,8 @@ function TraderTypeRevealStep({ onContinue, derivConnected }: { onContinue: () =
           )}
 
           {/* Stage 2 & 3: Scanning & Analyzing - Documents */}
-          {(animationStage === 'scanning' || animationStage === 'analyzing') && (
+          {(animationStage === "scanning" ||
+            animationStage === "analyzing") && (
             <>
               {/* Document stack shuffling */}
               <div className="relative w-[200px] h-[200px] flex items-center justify-center">
@@ -463,7 +577,7 @@ function TraderTypeRevealStep({ onContinue, derivConnected }: { onContinue: () =
                     style={{
                       animation: `document-shuffle 1.5s ease-in-out infinite`,
                       animationDelay: `${i * 0.15}s`,
-                      zIndex: 5 - i
+                      zIndex: 5 - i,
                     }}
                   >
                     {/* Document lines */}
@@ -492,9 +606,9 @@ function TraderTypeRevealStep({ onContinue, derivConnected }: { onContinue: () =
                     <div
                       key={i}
                       className={`flex-1 h-4 border-[3px] border-black rounded-[8px] transition-all duration-300 ${
-                        i < getProgressSegments() 
-                          ? 'bg-[#f3ff00] shadow-[4px_4px_0px_#000000]' 
-                          : 'bg-white/20'
+                        i < getProgressSegments()
+                          ? "bg-[#f3ff00] shadow-[4px_4px_0px_#000000]"
+                          : "bg-white/20"
                       }`}
                     />
                   ))}
@@ -520,7 +634,9 @@ function TraderTypeRevealStep({ onContinue, derivConnected }: { onContinue: () =
       {/* Title */}
       <div className="bg-transparent border-[4px] border-white rounded-[24px] px-12 py-4 animate-slide-down">
         <p className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-white text-center uppercase tracking-wide">
-          {derivConnected ? 'Your Trading Style Detected!' : 'Your Trading Profile'}
+          {derivConnected
+            ? "Your Trading Style Detected!"
+            : "Your Trading Profile"}
         </p>
       </div>
 
@@ -531,21 +647,21 @@ function TraderTypeRevealStep({ onContinue, derivConnected }: { onContinue: () =
           <div className="text-[80px] leading-none animate-pop-in">
             {traderType.emoji}
           </div>
-          
+
           {/* Type Name */}
           <h2 className="font-['Arimo:Bold',sans-serif] font-bold text-[36px] text-black text-center uppercase tracking-wide leading-tight">
             {traderType.name}
           </h2>
-          
+
           {/* Description */}
           <p className="font-['Arimo:Bold',sans-serif] font-bold text-[18px] text-black text-center leading-relaxed max-w-[600px]">
             {traderType.description}
           </p>
-          
+
           {/* Traits */}
           <div className="flex flex-wrap justify-center gap-3 mt-2">
             {traderType.traits.map((trait, index) => (
-              <div 
+              <div
                 key={index}
                 className="bg-[#f3ff00] border-[3px] border-black rounded-[16px] px-5 py-3 animate-pop-in"
                 style={{ animationDelay: `${index * 0.1}s` }}
@@ -558,7 +674,7 @@ function TraderTypeRevealStep({ onContinue, derivConnected }: { onContinue: () =
           </div>
         </div>
       </div>
-      
+
       {/* Info Text */}
       {derivConnected && (
         <p className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-[#f3ff00] text-center uppercase tracking-wide max-w-[600px] animate-fade-in-up">
@@ -570,7 +686,7 @@ function TraderTypeRevealStep({ onContinue, derivConnected }: { onContinue: () =
       <button
         onClick={onContinue}
         className="bg-white border-[5px] border-black rounded-[24px] px-16 py-6 shadow-[8px_8px_0px_#000000] hover:shadow-[4px_4px_0px_#000000] active:shadow-[1px_1px_0px_#000000] transition-all duration-150 max-w-[600px] w-full animate-slide-up-reveal"
-        style={{ animationDelay: '0.3s' }}
+        style={{ animationDelay: "0.3s" }}
       >
         <span className="font-['Arimo:Bold',sans-serif] font-bold text-[28px] text-black uppercase tracking-wide">
           Continue
@@ -581,16 +697,57 @@ function TraderTypeRevealStep({ onContinue, derivConnected }: { onContinue: () =
 }
 
 // Main Flow Component
-export default function UserProfiling({ onComplete }: { onComplete: () => void }) {
+export default function UserProfiling({
+  onComplete,
+}: {
+  onComplete: (profileData?: {
+    trading_level?: string;
+    preferred_market?: string;
+    learning_style?: string;
+    risk_tolerance?: string;
+    trading_frequency?: string;
+    trading_experience_years?: number;
+    trade_type?: string;
+    has_connected_trades?: boolean;
+    starting_point?: string;
+  }) => void;
+}) {
   const [currentStep, setCurrentStep] = useState(0);
   const [furthestStep, setFurthestStep] = useState(0);
   const [answers, setAnswers] = useState<OnboardingAnswers>({
     traderLevel: null,
   });
 
+  const handleComplete = () => {
+    // Map trader level to experience years
+    const experienceYearsMap: Record<string, number> = {
+      new: 0,
+      occasional: 1,
+      experienced: 3,
+    };
+
+    onComplete({
+      trading_level: answers.traderLevel || undefined,
+      preferred_market: answers.preferredMarket,
+      learning_style: answers.learningStyle,
+      risk_tolerance: answers.riskTolerance,
+      trading_frequency: answers.tradingFrequency,
+      trading_experience_years: answers.traderLevel
+        ? experienceYearsMap[answers.traderLevel]
+        : 0,
+      trade_type: "swing-trading", // TODO: Replace with actual detected trade type from backend
+      has_connected_trades: answers.derivConnected || false,
+      starting_point: answers.startingPoint,
+    });
+  };
+
   const getTotalSteps = () => {
-    if (answers.traderLevel === 'new') return 9; // Welcome + Trader Level + Starting Point + Preferred Market + Learning Style + Risk Tolerance + Trading Frequency + Deriv Connection + Trader Type Reveal
-    if (answers.traderLevel === 'occasional' || answers.traderLevel === 'experienced') return 8; // Welcome + Trader Level + Preferred Market + Learning Style + Risk Tolerance + Trading Frequency + Deriv Connection + Trader Type Reveal
+    if (answers.traderLevel === "new") return 9; // Welcome + Trader Level + Starting Point + Preferred Market + Learning Style + Risk Tolerance + Trading Frequency + Deriv Connection + Trader Type Reveal
+    if (
+      answers.traderLevel === "occasional" ||
+      answers.traderLevel === "experienced"
+    )
+      return 8; // Welcome + Trader Level + Preferred Market + Learning Style + Risk Tolerance + Trading Frequency + Deriv Connection + Trader Type Reveal
     return 1; // Welcome only
   };
 
@@ -658,28 +815,115 @@ export default function UserProfiling({ onComplete }: { onComplete: () => void }
 
     // Step 1: Trader Level (was Step 2, now Step 1 - skip Name/Email since we have it from signup)
     if (currentStep === 1) {
-      return <TraderLevelStep onSelect={handleTraderLevelSelect} onBack={goBack} />;
+      return (
+        <TraderLevelStep onSelect={handleTraderLevelSelect} onBack={goBack} />
+      );
     }
 
     // Branch A: New Trader
-    if (answers.traderLevel === 'new') {
-      if (currentStep === 2) return <StartingPointStep onSelect={handleStartingPointSelect} onBack={goBack} />;
-      if (currentStep === 3) return <PreferredMarketStep onSelect={handlePreferredMarketSelect} onBack={goBack} />;
-      if (currentStep === 4) return <LearningStyleStep onSelect={handleLearningStyleSelect} onBack={goBack} />;
-      if (currentStep === 5) return <RiskToleranceStep onSelect={handleRiskToleranceSelect} onBack={goBack} />;
-      if (currentStep === 6) return <TradingFrequencyStep onSelect={handleTradingFrequencySelect} onBack={goBack} isNewTrader={true} />;
-      if (currentStep === 7) return <DerivConnectionStep onConnect={handleDerivConnect} onSkip={handleDerivSkip} onBack={goBack} />;
-      if (currentStep === 8) return <TraderTypeRevealStep onContinue={onComplete} derivConnected={answers.derivConnected || false} />;
+    if (answers.traderLevel === "new") {
+      if (currentStep === 2)
+        return (
+          <StartingPointStep
+            onSelect={handleStartingPointSelect}
+            onBack={goBack}
+          />
+        );
+      if (currentStep === 3)
+        return (
+          <PreferredMarketStep
+            onSelect={handlePreferredMarketSelect}
+            onBack={goBack}
+          />
+        );
+      if (currentStep === 4)
+        return (
+          <LearningStyleStep
+            onSelect={handleLearningStyleSelect}
+            onBack={goBack}
+          />
+        );
+      if (currentStep === 5)
+        return (
+          <RiskToleranceStep
+            onSelect={handleRiskToleranceSelect}
+            onBack={goBack}
+          />
+        );
+      if (currentStep === 6)
+        return (
+          <TradingFrequencyStep
+            onSelect={handleTradingFrequencySelect}
+            onBack={goBack}
+            isNewTrader={true}
+          />
+        );
+      if (currentStep === 7)
+        return (
+          <DerivConnectionStep
+            onConnect={handleDerivConnect}
+            onSkip={handleDerivSkip}
+            onBack={goBack}
+          />
+        );
+      if (currentStep === 8)
+        return (
+          <TraderTypeRevealStep
+            onContinue={handleComplete}
+            derivConnected={answers.derivConnected || false}
+          />
+        );
     }
 
     // Branch B: Occasional/Experienced Trader
-    if (answers.traderLevel === 'occasional' || answers.traderLevel === 'experienced') {
-      if (currentStep === 2) return <PreferredMarketStep onSelect={handlePreferredMarketSelect} onBack={goBack} />;
-      if (currentStep === 3) return <LearningStyleStep onSelect={handleLearningStyleSelect} onBack={goBack} />;
-      if (currentStep === 4) return <RiskToleranceStep onSelect={handleRiskToleranceSelect} onBack={goBack} />;
-      if (currentStep === 5) return <TradingFrequencyStep onSelect={handleTradingFrequencySelect} onBack={goBack} isNewTrader={false} />;
-      if (currentStep === 6) return <DerivConnectionStep onConnect={handleDerivConnect} onSkip={handleDerivSkip} onBack={goBack} />;
-      if (currentStep === 7) return <TraderTypeRevealStep onContinue={onComplete} derivConnected={answers.derivConnected || false} />;
+    if (
+      answers.traderLevel === "occasional" ||
+      answers.traderLevel === "experienced"
+    ) {
+      if (currentStep === 2)
+        return (
+          <PreferredMarketStep
+            onSelect={handlePreferredMarketSelect}
+            onBack={goBack}
+          />
+        );
+      if (currentStep === 3)
+        return (
+          <LearningStyleStep
+            onSelect={handleLearningStyleSelect}
+            onBack={goBack}
+          />
+        );
+      if (currentStep === 4)
+        return (
+          <RiskToleranceStep
+            onSelect={handleRiskToleranceSelect}
+            onBack={goBack}
+          />
+        );
+      if (currentStep === 5)
+        return (
+          <TradingFrequencyStep
+            onSelect={handleTradingFrequencySelect}
+            onBack={goBack}
+            isNewTrader={false}
+          />
+        );
+      if (currentStep === 6)
+        return (
+          <DerivConnectionStep
+            onConnect={handleDerivConnect}
+            onSkip={handleDerivSkip}
+            onBack={goBack}
+          />
+        );
+      if (currentStep === 7)
+        return (
+          <TraderTypeRevealStep
+            onContinue={handleComplete}
+            derivConnected={answers.derivConnected || false}
+          />
+        );
     }
 
     return null;

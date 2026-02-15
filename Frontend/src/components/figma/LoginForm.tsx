@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ArrowLeft, Send } from "lucide-react";
 import imgChatGptImageFeb72026034014Pm1 from "figma:asset/c47576d9fb019c19ae2380c4945c7cde9e97a55b.png";
+import { login } from "../../api/auth";
 
 interface LoginFormProps {
   onBack: () => void;
@@ -9,7 +10,7 @@ interface LoginFormProps {
 
 export default function LoginForm({ onBack, onSuccess }: LoginFormProps) {
   const [formData, setFormData] = useState({
-    username: "",
+    email: "",
     password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -17,35 +18,29 @@ export default function LoginForm({ onBack, onSuccess }: LoginFormProps) {
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!formData.username || !formData.password) return;
+    if (!formData.email || !formData.password) return;
 
     setError("");
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual FastAPI backend call
-      // const response = await fetch('http://localhost:8000/auth/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // });
-      // const data = await response.json();
-
-      // Mock successful login for now
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Store user data in localStorage for now (replace with proper auth later)
-      localStorage.setItem(
-        "superbear_user",
-        JSON.stringify({
-          username: formData.username,
-          // In production, this will come from your backend JWT token
-        }),
-      );
+      await login({
+        email: formData.email,
+        password: formData.password,
+      });
 
       onSuccess();
-    } catch (err) {
-      setError("Login failed. Please check your credentials.");
+    } catch (err: unknown) {
+      const axiosError = err as {
+        response?: { data?: { detail?: string }; status?: number };
+      };
+      if (axiosError.response?.status === 401) {
+        setError("Invalid email or password.");
+      } else if (axiosError.response?.data?.detail) {
+        setError(axiosError.response.data.detail);
+      } else {
+        setError("Login failed. Please check your credentials.");
+      }
       setIsLoading(false);
     }
   };
@@ -58,7 +53,7 @@ export default function LoginForm({ onBack, onSuccess }: LoginFormProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && formData.username && formData.password) {
+    if (e.key === "Enter" && formData.email && formData.password) {
       handleSubmit();
     }
   };
@@ -93,18 +88,18 @@ export default function LoginForm({ onBack, onSuccess }: LoginFormProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
-          {/* Username */}
+          {/* Email */}
           <div className="flex flex-col gap-2">
             <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
               onChange={handleChange}
               required
               disabled={isLoading}
               className="h-[60px] rounded-[12px] border-[5px] border-black bg-white px-4 font-['Arimo:Bold',sans-serif] font-bold text-[18px] text-black placeholder:text-black/40 focus:outline-none focus:border-[#f3ff00] transition-colors shadow-[4px_4px_0px_#000000]"
-              placeholder="Enter username"
+              placeholder="Enter email"
             />
           </div>
 
@@ -145,7 +140,7 @@ export default function LoginForm({ onBack, onSuccess }: LoginFormProps) {
           {/* Login Button */}
           <button
             type="submit"
-            disabled={isLoading || !formData.username || !formData.password}
+            disabled={isLoading || !formData.email || !formData.password}
             className="w-full h-[60px] mt-4 rounded-[12px] border-[5px] border-black bg-[#f3ff00] font-['Arimo:Bold',sans-serif] font-bold text-[20px] text-black uppercase tracking-wide shadow-[4px_4px_0px_#000000] hover:bg-[#d4e000] hover:shadow-[6px_6px_0px_#000000] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-[2px_2px_0px_#000000] active:translate-x-[2px] active:translate-y-[2px] transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-[4px_4px_0px_#000000] disabled:hover:translate-x-0 disabled:hover:translate-y-0 flex items-center justify-center gap-3"
           >
             {isLoading ? (

@@ -1,5 +1,8 @@
-import { Flame, Shield, Trophy, Zap, Edit2, X, Palette } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Flame, Shield, Trophy, Zap, Edit2, X, Palette } from "lucide-react";
+import { useState, useEffect } from "react";
+import { getUserData } from "../../api/client";
+import { getMe } from "../../api/auth";
+import type { UserResponse } from "../../api/types";
 
 type FriendSuggestion = {
   id: string;
@@ -9,40 +12,73 @@ type FriendSuggestion = {
   followedBy: string;
 };
 
-const DEFAULT_COLOR = '#3bd6ff';
+const DEFAULT_COLOR = "#3bd6ff";
 const PRESET_COLORS = [
-  { color: '#f570dc', name: 'Pink' },
-  { color: '#3bd6ff', name: 'Cyan' },
-  { color: '#ff3131', name: 'Red' },
-  { color: '#ffb2b2', name: 'Rose' },
-  { color: '#5da38e', name: 'Teal' },
-  { color: '#1e1b4b', name: 'Starry Night' },
+  { color: "#f570dc", name: "Pink" },
+  { color: "#3bd6ff", name: "Cyan" },
+  { color: "#ff3131", name: "Red" },
+  { color: "#ffb2b2", name: "Rose" },
+  { color: "#5da38e", name: "Teal" },
+  { color: "#1e1b4b", name: "Starry Night" },
 ];
 
 export default function ProfileCenter({ onLogout }: { onLogout: () => void }) {
   const [selectedColor, setSelectedColor] = useState(DEFAULT_COLOR);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [buttonFlash, setButtonFlash] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserResponse | null>(null);
 
   const friendSuggestions: FriendSuggestion[] = [
-    { id: '1', name: 'LOLA', initial: 'L', color: '#fb923c', followedBy: 'Follows you' },
-    { id: '2', name: 'Miguel', initial: 'M', color: '#c084fc', followedBy: 'Followed by Olivia' },
-    { id: '3', name: 'Divyanshi', initial: 'D', color: '#3b82f6', followedBy: 'Followed by Olivia' },
+    {
+      id: "1",
+      name: "LOLA",
+      initial: "L",
+      color: "#fb923c",
+      followedBy: "Follows you",
+    },
+    {
+      id: "2",
+      name: "Miguel",
+      initial: "M",
+      color: "#c084fc",
+      followedBy: "Followed by Olivia",
+    },
+    {
+      id: "3",
+      name: "Divyanshi",
+      initial: "D",
+      color: "#3b82f6",
+      followedBy: "Followed by Olivia",
+    },
   ];
 
   useEffect(() => {
-    const currentColor = localStorage.getItem('profileColor');
+    const currentColor = localStorage.getItem("profileColor");
     if (currentColor) {
       setSelectedColor(currentColor);
     }
+
+    // Load user profile from backend
+    getMe()
+      .then((user) => {
+        setUserProfile(user);
+      })
+      .catch((err) => {
+        console.error("Failed to load profile:", err);
+        // Fallback to localStorage data
+        const localData = getUserData();
+        if (localData) {
+          setUserProfile(localData as unknown as UserResponse);
+        }
+      });
   }, []);
 
   const handleColorChange = (color: string) => {
     setSelectedColor(color);
-    localStorage.setItem('profileColor', color);
-    document.documentElement.style.setProperty('--bg-primary', color);
+    localStorage.setItem("profileColor", color);
+    document.documentElement.style.setProperty("--bg-primary", color);
     setIsColorPickerOpen(false);
-    
+
     // Trigger flash effect
     setButtonFlash(true);
     setTimeout(() => setButtonFlash(false), 400);
@@ -50,14 +86,14 @@ export default function ProfileCenter({ onLogout }: { onLogout: () => void }) {
 
   const handlePresetColorChange = (color: string) => {
     setSelectedColor(color);
-    localStorage.setItem('profileColor', color);
-    document.documentElement.style.setProperty('--bg-primary', color);
+    localStorage.setItem("profileColor", color);
+    document.documentElement.style.setProperty("--bg-primary", color);
   };
 
   const handleResetToDefault = () => {
     setSelectedColor(DEFAULT_COLOR);
-    localStorage.setItem('profileColor', DEFAULT_COLOR);
-    document.documentElement.style.setProperty('--bg-primary', DEFAULT_COLOR);
+    localStorage.setItem("profileColor", DEFAULT_COLOR);
+    document.documentElement.style.setProperty("--bg-primary", DEFAULT_COLOR);
   };
 
   return (
@@ -77,13 +113,15 @@ export default function ProfileCenter({ onLogout }: { onLogout: () => void }) {
 
           {/* Name and Username */}
           <h1 className="font-['Arimo:Bold',sans-serif] font-bold text-[32px] text-white mb-1">
-            Saarvind Raj
+            {userProfile?.username || "User"}
           </h1>
           <p className="font-['Arimo:Bold',sans-serif] font-bold text-[16px] text-white/50 mb-2">
-            @SaarvindRa
+            {userProfile?.email || ""}
           </p>
           <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-white/40 mb-4">
-            Joined June 2022
+            {userProfile?.created_at
+              ? `Joined ${new Date(userProfile.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}`
+              : ""}
           </p>
 
           {/* Following/Followers */}
@@ -211,8 +249,8 @@ export default function ProfileCenter({ onLogout }: { onLogout: () => void }) {
                     onClick={() => handlePresetColorChange(preset.color)}
                     className={`relative group rounded-[12px] border-[3px] p-3 transition-all hover:scale-105 ${
                       selectedColor === preset.color
-                        ? 'border-[#f3ff00] shadow-[4px_4px_0px_#f3ff00]'
-                        : 'border-white/20 hover:border-white/40'
+                        ? "border-[#f3ff00] shadow-[4px_4px_0px_#f3ff00]"
+                        : "border-white/20 hover:border-white/40"
                     }`}
                   >
                     <div
@@ -250,16 +288,16 @@ export default function ProfileCenter({ onLogout }: { onLogout: () => void }) {
                 <button
                   onClick={() => handleColorChange(selectedColor)}
                   className="flex-1 border-[3px] border-black rounded-[12px] px-6 py-3 shadow-[4px_4px_0px_#000000] hover:shadow-[2px_2px_0px_#000000] active:shadow-[1px_1px_0px_#000000] transition-all"
-                  style={{ 
-                    backgroundColor: buttonFlash ? selectedColor : '#ffffff',
-                    transition: 'background-color 0.4s ease'
+                  style={{
+                    backgroundColor: buttonFlash ? selectedColor : "#ffffff",
+                    transition: "background-color 0.4s ease",
                   }}
                 >
-                  <span 
+                  <span
                     className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] uppercase"
-                    style={{ 
-                      color: buttonFlash ? '#ffffff' : '#000000',
-                      transition: 'color 0.4s ease'
+                    style={{
+                      color: buttonFlash ? "#ffffff" : "#000000",
+                      transition: "color 0.4s ease",
                     }}
                   >
                     Apply

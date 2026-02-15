@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from "react";
 import imgChatGptImageFeb72026034014Pm1 from "figma:asset/c47576d9fb019c19ae2380c4945c7cde9e97a55b.png";
 import { Button } from "../ui/button";
+import { sendChatMessage } from "../../api/chat";
+import { getUserData } from "../../api/client";
 
 // Types
 type LessonQuestion = {
@@ -26,10 +28,11 @@ const lessonQuestions: LessonQuestion[] = [
       "Talk about your trading style",
       "Share your P&L immediately",
       "Ask for stock tips",
-      "Discuss your losses"
+      "Discuss your losses",
     ],
     correctAnswer: 0,
-    explanation: "Traders often introduce themselves by sharing their trading style and approach."
+    explanation:
+      "Traders often introduce themselves by sharing their trading style and approach.",
   },
   {
     id: 2,
@@ -38,10 +41,10 @@ const lessonQuestions: LessonQuestion[] = [
       "Risk management principles",
       "Guaranteed winning strategies",
       "Hot stock tips",
-      "Pump and dump schemes"
+      "Pump and dump schemes",
     ],
     correctAnswer: 0,
-    explanation: "Risk management is the foundation of successful trading."
+    explanation: "Risk management is the foundation of successful trading.",
   },
   {
     id: 3,
@@ -50,10 +53,11 @@ const lessonQuestions: LessonQuestion[] = [
       "Share your process and learning",
       "Brag about wins only",
       "Hide your losses",
-      "Give unprompted advice"
+      "Give unprompted advice",
     ],
     correctAnswer: 0,
-    explanation: "Sharing your learning process, including mistakes, builds trust and credibility."
+    explanation:
+      "Sharing your learning process, including mistakes, builds trust and credibility.",
   },
 ];
 
@@ -61,7 +65,7 @@ const lessonQuestions: LessonQuestion[] = [
 function ProgressBar({ progress }: { progress: number }) {
   return (
     <div className="absolute top-0 left-0 right-0 h-1.5 bg-black/20">
-      <div 
+      <div
         className="h-full bg-[#f3ff00] transition-all duration-300 ease-out"
         style={{ width: `${progress}%` }}
       />
@@ -72,16 +76,22 @@ function ProgressBar({ progress }: { progress: number }) {
 function MascotTopLeft() {
   return (
     <div className="absolute top-6 left-6 w-[80px] h-[120px] rounded-[40px] overflow-hidden z-10">
-      <img 
-        alt="SuperBear mascot" 
-        className="w-full h-full object-cover" 
-        src={imgChatGptImageFeb72026034014Pm1} 
+      <img
+        alt="SuperBear mascot"
+        className="w-full h-full object-cover"
+        src={imgChatGptImageFeb72026034014Pm1}
       />
     </div>
   );
 }
 
-function StreakIndicator({ correctStreak, wrongStreak }: { correctStreak: number; wrongStreak: number }) {
+function StreakIndicator({
+  correctStreak,
+  wrongStreak,
+}: {
+  correctStreak: number;
+  wrongStreak: number;
+}) {
   if (correctStreak === 0 && wrongStreak === 0) return null;
 
   // On Fire state for 3+ correct streak
@@ -122,7 +132,16 @@ function BackButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       className="bg-white border-[5px] border-black rounded-full w-[48px] h-[48px] flex items-center justify-center shadow-[8px_8px_0px_#000000] transition-all duration-150 hover:shadow-[4px_4px_0px_#000000] active:shadow-[1px_1px_0px_#000000]"
     >
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="black"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
         <line x1="19" y1="12" x2="5" y2="12"></line>
         <polyline points="12 19 5 12 12 5"></polyline>
       </svg>
@@ -130,16 +149,16 @@ function BackButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-function QuestionScreen({ 
-  question, 
-  questionNumber, 
-  totalQuestions, 
+function QuestionScreen({
+  question,
+  questionNumber,
+  totalQuestions,
   onAnswer,
   onBack,
-  selectedAnswer
-}: { 
-  question: LessonQuestion; 
-  questionNumber: number; 
+  selectedAnswer,
+}: {
+  question: LessonQuestion;
+  questionNumber: number;
   totalQuestions: number;
   onAnswer: (answerIndex: number) => void;
   onBack: () => void;
@@ -167,7 +186,7 @@ function QuestionScreen({
             onClick={() => onAnswer(index)}
             disabled={selectedAnswer !== null}
             className={`w-full max-w-[520px] bg-white border-[5px] border-black rounded-[16px] px-8 py-5 font-['Arimo:Bold',sans-serif] font-bold text-[20px] text-black capitalize tracking-wide transition-all duration-150 hover:shadow-[4px_4px_0px_#000000] active:shadow-[1px_1px_0px_#000000] shadow-[8px_8px_0px_#000000] text-left disabled:opacity-50 disabled:cursor-not-allowed
-            ${selectedAnswer === index ? (index === question.correctAnswer ? 'bg-[#22c55e] text-white' : 'bg-[#ef4444] text-white') : ''}`}
+            ${selectedAnswer === index ? (index === question.correctAnswer ? "bg-[#22c55e] text-white" : "bg-[#ef4444] text-white") : ""}`}
           >
             {option}
           </button>
@@ -186,29 +205,29 @@ function QuestionScreen({
   );
 }
 
-function CompletionScreen({ 
-  onComplete, 
-  correctCount, 
+function CompletionScreen({
+  onComplete,
+  correctCount,
   totalCount,
   xpEarned,
-  lessonTitle 
-}: { 
-  onComplete: () => void; 
-  correctCount: number; 
+  lessonTitle,
+}: {
+  onComplete: () => void;
+  correctCount: number;
   totalCount: number;
   xpEarned: number;
   lessonTitle: string;
 }) {
   const percentage = Math.round((correctCount / totalCount) * 100);
-  
+
   return (
     <div className="flex items-center justify-center h-full gap-12 px-8 py-12 overflow-y-auto hide-scrollbar relative">
       {/* Bear on the left */}
       <div className="w-[200px] h-[300px] rounded-[100px] overflow-hidden border-[5px] border-black shadow-[8px_8px_0px_#000000] flex-shrink-0">
-        <img 
-          alt="SuperBear mascot" 
-          className="w-full h-full object-cover" 
-          src={imgChatGptImageFeb72026034014Pm1} 
+        <img
+          alt="SuperBear mascot"
+          className="w-full h-full object-cover"
+          src={imgChatGptImageFeb72026034014Pm1}
         />
       </div>
 
@@ -220,7 +239,7 @@ function CompletionScreen({
             Lesson Complete!
           </p>
         </div>
-        
+
         {/* Lesson Score */}
         <div className="bg-white/10 rounded-[20px] px-8 py-6 border-[3px] border-white/20 w-full">
           <h3 className="font-['Arimo:Bold',sans-serif] font-bold text-[32px] text-[#f3ff00] text-center mb-2">
@@ -253,14 +272,14 @@ function CompletionScreen({
 }
 
 // Main Lesson Flow Component
-export default function LessonFlow({ 
-  onComplete, 
+export default function LessonFlow({
+  onComplete,
   onBack,
   lessonTitle,
   xpReward,
-  onXPEarned
-}: { 
-  onComplete: () => void; 
+  onXPEarned,
+}: {
+  onComplete: () => void;
   onBack: () => void;
   lessonTitle: string;
   xpReward: number;
@@ -276,6 +295,28 @@ export default function LessonFlow({
   const currentQuestion = lessonQuestions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / lessonQuestions.length) * 100;
 
+  // Notify the backend about lesson progress when completed
+  useEffect(() => {
+    if (showCompletionScreen) {
+      const correctCount = answers.filter((a) => a.isCorrect).length;
+      const userData = getUserData();
+
+      // Send a lesson completion message to SuperBear to update mastery
+      sendChatMessage({
+        message: `I just completed a lesson on "${lessonTitle}". I got ${correctCount} out of ${lessonQuestions.length} correct.`,
+        session_id: "lesson-progress",
+        user_profile: userData
+          ? {
+              name: (userData.username as string) || "User",
+              tradingLevel: (userData.trading_level as string) || "beginner",
+            }
+          : undefined,
+      }).catch((err) => {
+        console.error("Failed to report lesson progress:", err);
+      });
+    }
+  }, [showCompletionScreen]);
+
   const handleBack = () => {
     if (currentQuestionIndex === 0) {
       onBack();
@@ -287,15 +328,15 @@ export default function LessonFlow({
 
   const handleAnswer = (answerIndex: number) => {
     const isCorrect = answerIndex === currentQuestion.correctAnswer;
-    
+
     setSelectedAnswer(answerIndex);
-    
+
     const result: AnswerResult = {
       questionId: currentQuestion.id,
       selectedAnswer: answerIndex,
-      isCorrect
+      isCorrect,
     };
-    
+
     setAnswers([...answers, result]);
 
     // Update streaks
@@ -321,13 +362,13 @@ export default function LessonFlow({
     }, 1500);
   };
 
-  const correctCount = answers.filter(a => a.isCorrect).length;
+  const correctCount = answers.filter((a) => a.isCorrect).length;
 
   if (showCompletionScreen) {
     return (
-      <CompletionScreen 
-        onComplete={onComplete} 
-        correctCount={correctCount} 
+      <CompletionScreen
+        onComplete={onComplete}
+        correctCount={correctCount}
         totalCount={lessonQuestions.length}
         xpEarned={xpReward}
         lessonTitle={lessonTitle}
@@ -339,8 +380,11 @@ export default function LessonFlow({
     <div className="bg-[var(--bg-primary)] h-full w-full relative">
       <ProgressBar progress={progress} />
       <MascotTopLeft />
-      <StreakIndicator correctStreak={correctStreak} wrongStreak={wrongStreak} />
-      
+      <StreakIndicator
+        correctStreak={correctStreak}
+        wrongStreak={wrongStreak}
+      />
+
       <QuestionScreen
         question={currentQuestion}
         questionNumber={currentQuestionIndex + 1}

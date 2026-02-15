@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '../ui/button';
+import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "../ui/button";
 import imgChatGptImageFeb72026034014Pm1 from "figma:asset/c47576d9fb019c19ae2380c4945c7cde9e97a55b.png";
+import { register } from "../../api/auth";
 
 interface SignUpFormProps {
   onBack: () => void;
@@ -9,50 +10,51 @@ interface SignUpFormProps {
   onLogin?: () => void;
 }
 
-export default function SignUpForm({ onBack, onSuccess, onLogin }: SignUpFormProps) {
+export default function SignUpForm({
+  onBack,
+  onSuccess,
+  onLogin,
+}: SignUpFormProps) {
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: ''
+    username: "",
+    email: "",
+    password: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual FastAPI backend call
-      // const response = await fetch('http://localhost:8000/auth/register', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // });
-      // const data = await response.json();
-      
-      // Mock successful signup for now
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Store user data in localStorage for now (replace with proper auth later)
-      localStorage.setItem('superbear_user', JSON.stringify({
-        username: formData.username,
+      await register({
         email: formData.email,
-        // In production, this will come from your backend JWT token
-      }));
-      
+        username: formData.username,
+        password: formData.password,
+      });
+
       onSuccess();
-    } catch (err) {
-      setError('Sign up failed. Please try again.');
+    } catch (err: unknown) {
+      const axiosError = err as {
+        response?: { data?: { detail?: string }; status?: number };
+      };
+      if (axiosError.response?.status === 409) {
+        setError("An account with this email already exists.");
+      } else if (axiosError.response?.data?.detail) {
+        setError(axiosError.response.data.detail);
+      } else {
+        setError("Sign up failed. Please try again.");
+      }
       setIsLoading(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
@@ -80,10 +82,10 @@ export default function SignUpForm({ onBack, onSuccess, onLogin }: SignUpFormPro
 
         {/* Mascot */}
         <div className="w-[180px] h-[180px] rounded-full overflow-hidden">
-          <img 
-            alt="SuperBear mascot" 
-            className="w-full h-full object-cover" 
-            src={imgChatGptImageFeb72026034014Pm1} 
+          <img
+            alt="SuperBear mascot"
+            className="w-full h-full object-cover"
+            src={imgChatGptImageFeb72026034014Pm1}
           />
         </div>
 
@@ -96,7 +98,7 @@ export default function SignUpForm({ onBack, onSuccess, onLogin }: SignUpFormPro
         <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
           {/* Username */}
           <div className="flex flex-col gap-2">
-            <label 
+            <label
               htmlFor="username"
               className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-white uppercase tracking-wide"
             >
@@ -116,7 +118,7 @@ export default function SignUpForm({ onBack, onSuccess, onLogin }: SignUpFormPro
 
           {/* Email */}
           <div className="flex flex-col gap-2">
-            <label 
+            <label
               htmlFor="email"
               className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-white uppercase tracking-wide"
             >
@@ -136,7 +138,7 @@ export default function SignUpForm({ onBack, onSuccess, onLogin }: SignUpFormPro
 
           {/* Password */}
           <div className="flex flex-col gap-2">
-            <label 
+            <label
               htmlFor="password"
               className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-white uppercase tracking-wide"
             >
@@ -171,13 +173,13 @@ export default function SignUpForm({ onBack, onSuccess, onLogin }: SignUpFormPro
             disabled={isLoading}
             className="h-[68px] rounded-[16px] w-full font-['Arimo:Bold',sans-serif] text-[24px] tracking-wide uppercase mt-2"
           >
-            {isLoading ? 'CREATING ACCOUNT...' : 'CREATE ACCOUNT'}
+            {isLoading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
           </Button>
         </form>
 
         {/* Login Link */}
         <p className="font-['Arimo:Bold',sans-serif] font-bold text-[14px] text-white text-center">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <button
             onClick={handleLoginNavigation}
             className="text-[#f3ff00] hover:underline uppercase"

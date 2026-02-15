@@ -1,11 +1,15 @@
+import { getAccessToken, clearAllAuth } from "../api/client";
+
 const AUTH_STORAGE_KEY = "superbear_user";
 
 export function isAuthenticated(): boolean {
-  const userValue = window.localStorage.getItem(AUTH_STORAGE_KEY);
+  // Check for JWT access token first (primary auth)
+  const token = getAccessToken();
+  if (token) return true;
 
-  if (!userValue) {
-    return false;
-  }
+  // Fallback: check legacy localStorage user object
+  const userValue = window.localStorage.getItem(AUTH_STORAGE_KEY);
+  if (!userValue) return false;
 
   try {
     const parsed = JSON.parse(userValue);
@@ -16,5 +20,6 @@ export function isAuthenticated(): boolean {
 }
 
 export function clearSession(): void {
+  clearAllAuth();
   window.localStorage.removeItem(AUTH_STORAGE_KEY);
 }

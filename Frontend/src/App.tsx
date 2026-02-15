@@ -1,12 +1,17 @@
-import LandingPage from './components/figma/LandingPage';
-import Dashboard from './components/figma/Dashboard';
-import LoginForm from './components/figma/LoginForm';
-import SignUpForm from './components/figma/SignUpForm';
-import OnboardingFlow from './components/figma/OnboardingFlow';
-import { APP_ROUTES, DASHBOARD_ROUTE_BY_TAB, DASHBOARD_TAB_BY_ROUTE } from './routing/routes';
-import { navigateTo, usePathname } from './routing/navigation';
-import { clearSession, isAuthenticated } from './routing/auth';
-import { useEffect } from 'react';
+import LandingPage from "./components/figma/LandingPage";
+import Dashboard from "./components/figma/Dashboard";
+import LoginForm from "./components/figma/LoginForm";
+import SignUpForm from "./components/figma/SignUpForm";
+import OnboardingFlow from "./components/figma/OnboardingFlow";
+import {
+  APP_ROUTES,
+  DASHBOARD_ROUTE_BY_TAB,
+  DASHBOARD_TAB_BY_ROUTE,
+} from "./routing/routes";
+import { navigateTo, usePathname } from "./routing/navigation";
+import { clearSession, isAuthenticated } from "./routing/auth";
+import { useEffect } from "react";
+import { logout } from "./api/auth";
 
 function Redirect({ to, replace = true }: { to: string; replace?: boolean }) {
   useEffect(() => {
@@ -19,6 +24,16 @@ function Redirect({ to, replace = true }: { to: string; replace?: boolean }) {
 export default function App() {
   const pathname = usePathname();
   const authenticated = isAuthenticated();
+
+  // Redirect to login when auth tokens expire (fired by API client interceptor)
+  useEffect(() => {
+    const handleExpired = () => {
+      clearSession();
+      navigateTo(APP_ROUTES.auth.login, true);
+    };
+    window.addEventListener("auth:expired", handleExpired);
+    return () => window.removeEventListener("auth:expired", handleExpired);
+  }, []);
 
   if (pathname === APP_ROUTES.home) {
     return (
@@ -53,7 +68,11 @@ export default function App() {
       return <Redirect to={APP_ROUTES.auth.register} />;
     }
 
-    return <OnboardingFlow onComplete={() => navigateTo(APP_ROUTES.dashboard.learn, true)} />;
+    return (
+      <OnboardingFlow
+        onComplete={() => navigateTo(APP_ROUTES.dashboard.learn, true)}
+      />
+    );
   }
 
   if (pathname === APP_ROUTES.dashboard.root) {
@@ -71,8 +90,10 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={(tab) => navigateTo(DASHBOARD_ROUTE_BY_TAB[tab])}
         onLogout={() => {
-          clearSession();
-          navigateTo(APP_ROUTES.home, true);
+          logout().then(() => {
+            clearSession();
+            navigateTo(APP_ROUTES.home, true);
+          });
         }}
       />
     );
